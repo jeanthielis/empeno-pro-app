@@ -2,7 +2,7 @@
   <div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-950">
     <Sidebar />
 
-    <main class="flex-1 overflow-y-auto w-full p-6">
+    <main class="flex-1 overflow-y-auto w-full p-6 pb-24 md:pb-6">
       <header class="mb-8">
         <h1 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
           <i class="ph-bold ph-gear text-blue-600"></i> Administração de Sistema

@@ -82,7 +82,7 @@
                 <button
                   v-for="c in CLASSES_AD" :key="c" type="button"
                   @click="form.classeAD = c"
-                  class="py-2.5 rounded-xl text-xs font-black border-2 transition-all"
+                  class="py-2.5 rounded-xl text-xs font-black border-2 transition-all min-h-[48px]"
                   :class="form.classeAD === c
                     ? corClasseAtivo(c)
                     : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:border-teal-300'"
@@ -147,7 +147,7 @@
                 </div>
               </div>
               <input
-                type="number" step="0.001"
+                type="number" inputmode="decimal" step="0.001"
                 v-model.number="form.medidas[idx]"
                 placeholder="0.000"
                 class="w-full text-center text-xl font-bold bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-2.5 outline-none focus:ring-2 focus:ring-teal-500 text-gray-900 dark:text-white"
@@ -393,6 +393,7 @@ const confirmarEnvio = async () => {
       data: new Date().toLocaleDateString('pt-BR'),
       hora: new Date().toLocaleTimeString('pt-BR').slice(0, 5),
     })
+  if (navigator.vibrate) navigator.vibrate(150)
     await Swal.fire({ title: 'Salvo!', text: 'Medição gravada com sucesso.', icon: 'success', timer: 2000, timerProgressBar: true, confirmButtonColor: '#0d9488' })
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {

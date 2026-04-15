@@ -3,7 +3,10 @@
     "allow": [
       "Bash(git init *)",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git *)",
+      "Bash(gh --version)",
+      "Bash(sudo dnf *)"
     ]
   }
 }

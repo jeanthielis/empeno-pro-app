@@ -40,7 +40,7 @@
               <div class="relative">
                 <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Produto</label>
                 <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-[2.2rem] text-gray-400 text-lg"></i>
-                <input type="text" v-model="form.produto" @focus="showProd = true" @blur="hideProd" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 pl-10 text-[15px] focus:ring-2 focus:ring-blue-500 outline-none uppercase placeholder:normal-case placeholder:text-gray-400" required placeholder="Buscar Produto..." autocomplete="off">
+                <input type="text" autocapitalize="characters" v-model="form.produto" @focus="showProd = true" @blur="hideProd" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 pl-10 text-[15px] focus:ring-2 focus:ring-blue-500 outline-none uppercase placeholder:normal-case placeholder:text-gray-400" required placeholder="Buscar Produto..." autocomplete="off">
                 
                 <div v-if="showProd && produtosFiltrados.length" class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                   <div v-for="p in produtosFiltrados" :key="p" @mousedown.prevent="selecionarProduto(p)" class="p-3 text-sm cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700 dark:text-white text-gray-700 font-bold uppercase border-b border-gray-100 dark:border-slate-700 last:border-0 transition-colors">
@@ -51,7 +51,7 @@
 
               <div>
                 <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Lote</label>
-                <input type="text" v-model="form.lote" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] focus:ring-2 focus:ring-blue-500 outline-none uppercase font-bold placeholder:font-normal placeholder:text-gray-400" required placeholder="EX: A123">
+                <input type="text" autocapitalize="characters" v-model="form.lote" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] focus:ring-2 focus:ring-blue-500 outline-none uppercase font-bold placeholder:font-normal placeholder:text-gray-400" required placeholder="EX: A123">
               </div>
               <div>
                 <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Pós Folga?</label>
@@ -96,7 +96,7 @@
                         <label class="text-[10px] font-bold text-gray-500 uppercase">Lado {{ lado }}</label>
                         <StatusBadge :status="validar(peca[`lat${lado}`], configAtiva.latMin, configAtiva.latMax)" />
                       </div>
-                      <input type="number" step="0.01" v-model.number="peca[`lat${lado}`]" class="w-full input-clean text-center font-bold bg-white dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700" placeholder="0.00" required>
+                      <input type="number" inputmode="decimal" step="0.01" v-model.number="peca[`lat${lado}`]" class="w-full input-clean text-center font-bold bg-white dark:bg-slate-900 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700" placeholder="0.00" required>
                     </div>
                   </div>
                 </div>
@@ -109,7 +109,7 @@
                         <label class="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">Lado {{ lado }} (Centro)</label>
                         <StatusBadge :status="validar(peca[`cen${lado}`], configAtiva.centMin, configAtiva.centMax)" />
                       </div>
-                      <input type="number" step="0.01" v-model.number="peca[`cen${lado}`]" class="w-full input-clean border-indigo-300 dark:bg-slate-900 text-center text-lg font-bold text-indigo-700 dark:text-indigo-300" placeholder="0.00" required>
+                      <input type="number" inputmode="decimal" step="0.01" v-model.number="peca[`cen${lado}`]" class="w-full input-clean border-indigo-300 dark:bg-slate-900 text-center text-lg font-bold text-indigo-700 dark:text-indigo-300" placeholder="0.00" required>
                     </div>
                   </div>
                 </div>
@@ -288,6 +288,7 @@ const confirmarEnvio = async () => {
       hora:         new Date().toLocaleTimeString('pt-BR').slice(0, 5),
     })
 
+  if (navigator.vibrate) navigator.vibrate(150)
     await Swal.fire({ title: 'Salvo!', text: 'Amostragem gravada com sucesso.', icon: 'success', timer: 2000, timerProgressBar: true, confirmButtonColor: '#3B82F6' })
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {

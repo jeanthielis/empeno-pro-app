@@ -161,7 +161,7 @@
                     <div class="grid grid-cols-2 gap-2">
                       <button v-for="s in situacoes" :key="s.valor" type="button"
                         @click="lote.situacao = s.valor"
-                        class="flex items-center gap-2 px-2.5 py-2 rounded-lg border-2 text-xs font-bold transition-all"
+                        class="flex items-center gap-2 px-2.5 py-2 rounded-lg border-2 text-xs font-bold transition-all min-h-[48px]"
                         :class="lote.situacao === s.valor ? s.classAtivo : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 hover:border-gray-300'"
                       >
                         <span class="text-sm shrink-0">{{ s.emoji }}</span>
@@ -379,6 +379,7 @@ const salvarRelatorio = async () => {
       dataHora:       serverTimestamp(),
     })
 
+  if (navigator.vibrate) navigator.vibrate(150)
     await Swal.fire({ title: 'Guardado!', text: 'Relatório salvo com sucesso.', icon: 'success', confirmButtonColor: '#6366f1', timer: 2000, timerProgressBar: true })
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {

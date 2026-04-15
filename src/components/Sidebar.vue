@@ -49,13 +49,13 @@
       <div v-if="!isCollapsed" class="flex justify-between items-center w-full mb-1">
         <span class="text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Tema Visual</span>
       </div>
-      <button @click="toggleTheme"
+      <button @click="themeStore.toggle()"
         class="p-2.5 w-full flex items-center rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors shadow-sm overflow-hidden"
         :class="isCollapsed ? 'justify-center' : 'justify-start gap-3'"
-        :title="isDark ? 'Modo Claro' : 'Modo Escuro'">
-        <i :class="isDark ? 'ph-fill ph-sun text-xl shrink-0' : 'ph-fill ph-moon text-xl text-blue-600 shrink-0'"></i>
+        :title="themeStore.isDark ? 'Modo Claro' : 'Modo Escuro'">
+        <i :class="themeStore.isDark ? 'ph-fill ph-sun text-xl shrink-0' : 'ph-fill ph-moon text-xl text-blue-600 shrink-0'"></i>
         <transition name="fade">
-          <span v-if="!isCollapsed" class="text-sm font-bold whitespace-nowrap">{{ isDark ? 'Modo Claro' : 'Modo Escuro' }}</span>
+          <span v-if="!isCollapsed" class="text-sm font-bold whitespace-nowrap">{{ themeStore.isDark ? 'Modo Claro' : 'Modo Escuro' }}</span>
         </transition>
       </button>
     </div>
@@ -119,10 +119,10 @@
       </router-link>
 
       <!-- Tema -->
-      <button @click="toggleTheme"
+      <button @click="themeStore.toggle()"
         class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-[56px] text-gray-400 dark:text-yellow-400">
-        <i :class="isDark ? 'ph-fill ph-sun text-2xl' : 'ph-fill ph-moon text-2xl'"></i>
-        <span class="text-[10px] font-bold">{{ isDark ? 'Claro' : 'Escuro' }}</span>
+        <i :class="themeStore.isDark ? 'ph-fill ph-sun text-2xl' : 'ph-fill ph-moon text-2xl'"></i>
+        <span class="text-[10px] font-bold">{{ themeStore.isDark ? 'Claro' : 'Escuro' }}</span>
       </button>
 
     </nav>
@@ -178,13 +178,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useThemeStore } from '../stores/theme'
 
 const authStore    = useAuthStore()
+const themeStore   = useThemeStore()
 const route        = useRoute()
-const isDark       = ref(false)
 const isCollapsed  = ref(false)
 const drawerAberto = ref(false)
 
@@ -199,17 +200,6 @@ let touchStartY = 0
 const onTouchStart = (e) => { touchStartY = e.touches[0].clientY }
 const onTouchMove  = (e) => { if (e.touches[0].clientY - touchStartY > 60) drawerAberto.value = false }
 const onTouchEnd   = () => { touchStartY = 0 }
-
-onMounted(() => {
-  isDark.value = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark'
-  if (isDark.value) document.documentElement.classList.add('dark')
-})
-
-const toggleTheme = () => {
-  isDark.value = !isDark.value
-  document.documentElement.classList.toggle('dark', isDark.value)
-  localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
-}
 </script>
 
 <style scoped>

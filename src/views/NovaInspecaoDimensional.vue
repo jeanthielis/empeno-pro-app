@@ -39,7 +39,7 @@
             <div class="relative">
               <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">Produto</label>
               <i class="ph-bold ph-magnifying-glass absolute left-3.5 top-[2.2rem] text-gray-400 text-lg"></i>
-              <input type="text" v-model="form.produto" @focus="showProd = true" @blur="hideProd" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 pl-10 text-[15px] outline-none focus:ring-2 focus:ring-violet-500 uppercase placeholder:normal-case placeholder:text-gray-400" required placeholder="Buscar Produto..." autocomplete="off">
+              <input type="text" autocapitalize="characters" v-model="form.produto" @focus="showProd = true" @blur="hideProd" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 pl-10 text-[15px] outline-none focus:ring-2 focus:ring-violet-500 uppercase placeholder:normal-case placeholder:text-gray-400" required placeholder="Buscar Produto..." autocomplete="off">
               
               <div v-if="showProd && produtosFiltrados.length" class="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
                 <div v-for="p in produtosFiltrados" :key="p" @mousedown.prevent="selecionarProduto(p)" class="p-3 text-sm cursor-pointer hover:bg-violet-50 dark:hover:bg-slate-700 dark:text-white text-gray-700 font-bold uppercase border-b border-gray-100 dark:border-slate-700 last:border-0 transition-colors">
@@ -51,11 +51,11 @@
             <div class="grid grid-cols-2 gap-4">
               <div>
                 <label class="block text-[11px] font-bold text-gray-500 uppercase mb-1.5">Lote</label>
-                <input type="text" v-model="form.lote" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] uppercase font-bold outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-gray-400" required placeholder="EX: A123">
+                <input type="text" autocapitalize="characters" v-model="form.lote" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] uppercase font-bold outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-gray-400" required placeholder="EX: A123">
               </div>
               <div>
                 <label class="block text-[11px] font-bold text-violet-500 uppercase mb-1.5">Espessura (mm)</label>
-                <input type="number" step="0.01" v-model="form.espessuraDeclarada" class="w-full bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded-lg p-3 text-[15px] font-bold outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-violet-300" required placeholder="Ex: 10.00">
+                <input type="number" inputmode="decimal" step="0.01" v-model="form.espessuraDeclarada" class="w-full bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded-lg p-3 text-[15px] font-bold outline-none focus:ring-2 focus:ring-violet-500 placeholder:font-normal placeholder:text-violet-300" required placeholder="Ex: 10.00">
               </div>
             </div>
             <div class="pt-4"><button type="submit" class="w-full py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold shadow-lg shadow-violet-500/25 flex items-center justify-center gap-2 text-lg"><i class="ph-bold ph-play"></i> Iniciar Medições</button></div>
@@ -95,7 +95,7 @@
                 <div v-for="(pt, pIdx) in peca.pontos" :key="pIdx" class="relative">
                   <span class="absolute -top-2 left-2 bg-white dark:bg-slate-900 text-[10px] text-gray-400 font-bold px-1">P{{ pIdx + 1 }}</span>
                   <div class="flex items-center">
-                    <input type="number" step="0.01" v-model="peca.pontos[pIdx]" class="w-20 text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-violet-500 text-gray-900 dark:text-white">
+                    <input type="number" inputmode="decimal" step="0.01" v-model="peca.pontos[pIdx]" class="w-20 text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-violet-500 text-gray-900 dark:text-white">
                     <button type="button" @click="peca.pontos.splice(pIdx, 1)" class="ml-1 text-gray-400 hover:text-red-500"><i class="ph-bold ph-minus-circle"></i></button>
                   </div>
                 </div>
@@ -122,11 +122,11 @@
                <div class="p-4 grid grid-cols-2 gap-4">
                   <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">Tamanho</label>
-                    <input type="number" step="0.01" v-model="med.tamanho" class="w-full text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white">
+                    <input type="number" inputmode="decimal" step="0.01" v-model="med.tamanho" class="w-full text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white">
                   </div>
                   <div>
                     <label class="text-[10px] text-gray-400 font-bold uppercase mb-1 block">Esquadro</label>
-                    <input type="number" step="0.01" v-model="med.esquadro" class="w-full text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white">
+                    <input type="number" inputmode="decimal" step="0.01" v-model="med.esquadro" class="w-full text-center bg-transparent border border-gray-200 dark:border-slate-700 rounded-lg p-2 font-bold outline-none focus:border-orange-500 text-gray-900 dark:text-white">
                   </div>
                </div>
             </div>

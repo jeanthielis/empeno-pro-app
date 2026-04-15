@@ -49,7 +49,7 @@
               <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Linha</label>
               <select v-model="form.linha" required class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] focus:ring-2 focus:ring-teal-500 outline-none">
                 <option value="" disabled>Selecione...</option>
-                <option v-for="ln in linhasDisponiveis" :key="ln" :value="ln">{{ ln }}</option>
+                <option v-for="ln in refStore.linhas" :key="ln" :value="ln">{{ ln }}</option>
               </select>
             </div>
 
@@ -239,15 +239,15 @@ import Swal from 'sweetalert2'
 import Sidebar from '../components/Sidebar.vue'
 
 const router   = useRouter()
+const authStore = useAuthStore()
+const refStore  = useReferenciasStore()
 const passo    = ref(1)
 const salvando = ref(false)
 const carregandoLimites = ref(true)
 
 const CLASSES_AD = ['AD', 'AD2', 'AD3', 'AD4', 'AD4+']
 
-const produtosDisponiveis = ref([])
-const linhasDisponiveis   = ref([])
-const configClasses       = ref({}) // { AD: { min, max }, AD2: {...}, ... }
+const configClasses = ref({})
 
 // ── Autocomplete ──────────────────────────────────────────────────────────────
 const showProd = ref(false)

@@ -120,12 +120,12 @@
               <div class="w-full md:w-1/3"><button type="button" @click="adicionarPeca" class="w-full border-2 border-dashed border-gray-300 dark:border-slate-700 text-gray-500 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800 py-6 rounded-xl font-bold transition-all flex flex-col items-center gap-2"><i class="ph-bold ph-plus-circle text-2xl"></i> Adicionar Nova Peça</button></div>
               <div class="w-full md:w-2/3"><h3 class="text-xs font-bold text-gray-500 uppercase mb-2"><i class="ph-bold ph-chat-text"></i> Observações do Lote</h3><textarea v-model="form.observacoes" rows="3" class="w-full input-clean resize-none bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700" placeholder="Anotações opcionais..."></textarea></div>
             </div>
-            <div class="flex justify-end gap-3 pt-2">
+            <div class="flex justify-end gap-2 pt-2 pb-24 md:pb-4">
               <button type="button" @click="enviarWhatsApp"
-                class="flex items-center gap-2 px-6 py-4 rounded-xl font-bold border-2 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 transition-all text-base">
-                <i class="ph-fill ph-whatsapp-logo text-xl"></i> WhatsApp
+                class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold border-2 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 transition-all text-sm">
+                <i class="ph-fill ph-whatsapp-logo text-base"></i> WhatsApp
               </button>
-              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-12 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 text-lg">
+              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 text-sm">
                 <i class="ph-bold ph-floppy-disk"></i> Gravar Amostragem
               </button>
             </div>
@@ -147,6 +147,8 @@ import { db, auth } from '../firebase'
 import Swal from 'sweetalert2'
 import Sidebar from '../components/Sidebar.vue'
 import StatusBadge from '../components/StatusBadge.vue'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -244,6 +246,123 @@ const validar = (valor, min, max) => {
   return (v >= Number(min) && v <= Number(max)) ? 'aprovado' : 'reprovado'
 }
 
+// ── Gerador de PDF da inspeção ────────────────────────────────────────────────
+const gerarPDFInspecao = (statusGeral, agora) => {
+  const cfg    = configAtiva.value
+  const fmtNum = (v) => (v !== null && v !== '' && !isNaN(Number(v))) ? Number(v).toFixed(2) : '--'
+  const foraLat  = (v) => validar(v, cfg.latMin, cfg.latMax)  === 'reprovado'
+  const foraCent = (v) => validar(v, cfg.centMin, cfg.centMax) === 'reprovado'
+  const CZ = [51, 65, 85]; const CB = [255,255,255]; const CV = [5,150,105]; const CR = [220,38,38]
+  const CRL = [254,226,226]; const CVL = [209,250,229]
+  const data = agora.toLocaleDateString('pt-BR')
+  const hora = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' })
+  const W = doc.internal.pageSize.getWidth()
+
+  // ── Cabeçalho ──
+  doc.setFillColor(15, 23, 42); doc.rect(0, 0, W, 32, 'F')
+  doc.setFillColor(37, 99, 235); doc.rect(0, 0, W, 1.5, 'F')
+  // Logo
+  doc.setFillColor(37, 99, 235); doc.roundedRect(10, 6, 16, 16, 3, 3, 'F')
+  doc.setFontSize(10); doc.setTextColor(255,255,255); doc.setFont('helvetica','bold')
+  doc.text('QC', 18, 17, { align: 'center' })
+  // Título
+  doc.setFontSize(13); doc.text('QualityControl — Empeno Pro', 30, 13)
+  doc.setFontSize(7.5); doc.setFont('helvetica','normal'); doc.setTextColor(147,197,253)
+  doc.text('Relatório de Inspeção de Empeno', 30, 19)
+  doc.setFontSize(6.5); doc.setTextColor(100,116,139)
+  doc.text(`Gerado em ${data} às ${hora}`, W - 10, 19, { align: 'right' })
+
+  // Badge de resultado
+  const badgeColor = statusGeral === 'Aprovado' ? CV : CR
+  const badgeBg    = statusGeral === 'Aprovado' ? CVL : CRL
+  doc.setFillColor(...badgeBg); doc.roundedRect(W - 46, 5, 36, 14, 2, 2, 'F')
+  doc.setFillColor(...badgeColor); doc.rect(W - 46, 5, 2.5, 14, 'F')
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(...badgeColor)
+  doc.text(statusGeral.toUpperCase(), W - 28, 14, { align: 'center' })
+
+  // ── Dados do lote ──
+  const ly = 38
+  doc.setFillColor(248,250,252); doc.roundedRect(10, ly, W - 20, 36, 2, 2, 'F')
+  doc.setDrawColor(226,232,240); doc.setLineWidth(0.3); doc.roundedRect(10, ly, W - 20, 36, 2, 2, 'D')
+
+  const campos = [
+    ['Inspetor', form.value.inspetor], ['Linha', form.value.linha],
+    ['Produto', form.value.produto],   ['Formato', form.value.formatoNome],
+    ['Lote', form.value.lote],         ['Pós Folga', form.value.posFolga],
+  ]
+  campos.forEach(([label, val], i) => {
+    const col = i % 3; const row = Math.floor(i / 3)
+    const cx = 14 + col * ((W - 28) / 3)
+    const cy = ly + 8 + row * 14
+    doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139)
+    doc.text(label.toUpperCase(), cx, cy)
+    doc.setFontSize(8.5); doc.setFont('helvetica','bold'); doc.setTextColor(30,41,59)
+    doc.text(String(val || '—'), cx, cy + 6)
+  })
+
+  // Ranges
+  const ry = ly + 38
+  doc.setFillColor(219,234,254); doc.roundedRect(10, ry, (W - 24) / 2, 10, 2, 2, 'F')
+  doc.setFillColor(220,252,231); doc.roundedRect(14 + (W - 24) / 2, ry, (W - 24) / 2, 10, 2, 2, 'F')
+  doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(71,85,105)
+  doc.text('RANGE LATERAL', 14, ry + 4); doc.text('RANGE CENTRAL', 18 + (W - 24) / 2, ry + 4)
+  doc.setFontSize(8); doc.setFont('helvetica','bold'); doc.setTextColor(30,41,59)
+  doc.text(`${fmtNum(cfg.latMin)}  a  ${fmtNum(cfg.latMax)}`, 14, ry + 9)
+  doc.text(`${fmtNum(cfg.centMin)}  a  ${fmtNum(cfg.centMax)}`, 18 + (W - 24) / 2, ry + 9)
+
+  // ── Tabela de medições ──
+  const head = [['Peça', 'Lat A', 'Lat B', 'Lat C', 'Lat D', 'Cent 1', 'Cent 2']]
+  const body = form.value.pecas.map((p, idx) => [
+    idx + 1, fmtNum(p.latA), fmtNum(p.latB), fmtNum(p.latC), fmtNum(p.latD), fmtNum(p.cenA), fmtNum(p.cenB)
+  ])
+  // Marcar células fora do range
+  const celulasForaLat  = []
+  const celulasForaCent = []
+  form.value.pecas.forEach((p, ri) => {
+    if (foraLat(p.latA))  celulasForaLat.push({ri, ci:1})
+    if (foraLat(p.latB))  celulasForaLat.push({ri, ci:2})
+    if (foraLat(p.latC))  celulasForaLat.push({ri, ci:3})
+    if (foraLat(p.latD))  celulasForaLat.push({ri, ci:4})
+    if (foraCent(p.cenA)) celulasForaCent.push({ri, ci:5})
+    if (foraCent(p.cenB)) celulasForaCent.push({ri, ci:6})
+  })
+
+  autoTable(doc, {
+    startY: ry + 14,
+    head, body,
+    styles: { fontSize: 8.5, cellPadding: 3, halign: 'center', textColor: CZ, lineColor: [226,232,240], lineWidth: 0.2 },
+    headStyles: { fillColor: CZ, textColor: CB, fontStyle: 'bold', fontSize: 8 },
+    alternateRowStyles: { fillColor: [248,250,252] },
+    columnStyles: { 0: { fontStyle: 'bold', fillColor: [241,245,249] } },
+    margin: { left: 10, right: 10 },
+    didParseCell(d) {
+      if (d.section !== 'body') return
+      const { ri, ci } = { ri: d.row.index, ci: d.column.index }
+      if (celulasForaLat.some(c => c.ri===ri && c.ci===ci) || celulasForaCent.some(c => c.ri===ri && c.ci===ci)) {
+        d.cell.styles.textColor = CR; d.cell.styles.fontStyle = 'bold'; d.cell.styles.fillColor = CRL
+      } else if (ci >= 1) {
+        d.cell.styles.textColor = CV
+      }
+    }
+  })
+
+  // ── Rodapé ──
+  const H = doc.internal.pageSize.getHeight()
+  doc.setFillColor(15,23,42); doc.rect(0, H-12, W, 12, 'F')
+  doc.setFillColor(37,99,235); doc.rect(0, H-12, W, 0.8, 'F')
+  doc.setFontSize(6.5); doc.setFont('helvetica','bold'); doc.setTextColor(147,197,253)
+  doc.text('QualityControl — Empeno Pro', 10, H-5.5)
+  doc.setFont('helvetica','normal'); doc.setTextColor(100,116,139)
+  doc.text('* Vermelho = valor fora do range tolerado', W/2, H-5.5, { align:'center' })
+  doc.text('1 / 1', W-10, H-5.5, { align:'right' })
+
+  // Salva e retorna o blob para possível uso futuro
+  const filename = `Empeno_${form.value.lote}_${data.replace(/\//g,'-')}.pdf`
+  doc.save(filename)
+}
+
 const confirmarEnvio = async () => {
   const cfg = configAtiva.value
 
@@ -276,66 +395,84 @@ const confirmarEnvio = async () => {
   if (!result.isConfirmed) return
 
   try {
-    // ✅ CORRIGIDO: transforma pecas para o formato correto do banco
     const pecasFormatadas = form.value.pecas.map(p => ({
-      laterais: {
-        A: Number(p.latA),
-        B: Number(p.latB),
-        C: Number(p.latC),
-        D: Number(p.latD),
-      },
-      centrais: {
-        '1': Number(p.cenA),
-        '2': Number(p.cenB),
-      }
+      laterais: { A: Number(p.latA), B: Number(p.latB), C: Number(p.latC), D: Number(p.latD) },
+      centrais: { '1': Number(p.cenA), '2': Number(p.cenB) }
     }))
 
-    // ✅ CORRIGIDO: limitesSnapshot com os nomes corretos do banco
     const limitesSnapshot = {
-      latMin:       cfg.latMin,
-      latMax:       cfg.latMax,
-      centMin:      cfg.centMin,
-      centMax:      cfg.centMax,
-      tamanhoMin:   cfg.tamanhoMin   ?? null,
-      tamanhoMax:   cfg.tamanhoMax   ?? null,
-      esquadroMin:  cfg.esquadroMin  ?? null,
-      esquadroMax:  cfg.esquadroMax  ?? null,
+      latMin: cfg.latMin, latMax: cfg.latMax, centMin: cfg.centMin, centMax: cfg.centMax,
+      tamanhoMin: cfg.tamanhoMin ?? null, tamanhoMax: cfg.tamanhoMax ?? null,
+      esquadroMin: cfg.esquadroMin ?? null, esquadroMax: cfg.esquadroMax ?? null,
     }
 
-    // ✅ CORRIGIDO: formatoId correto e dataHora (não dataHoa)
     const formatoDoc = refStore.formatos.find(f => f.nome === form.value.formatoNome)
+    const agora = new Date()
 
     await addDoc(collection(db, 'inspecoes'), {
-      // Dados do lote
-      produto:      form.value.produto,
-      lote:         form.value.lote,
-      linha:        form.value.linha,
-      inspetor:     form.value.inspetor,
-      formatoNome:  form.value.formatoNome,
-      formatoId:    formatoDoc?.id ?? null,
-      posFolga:     form.value.posFolga,
-      observacoes:  form.value.observacoes || '',
-
-      // Medições
-      pecas:        pecasFormatadas,
-      limitesSnapshot,
-      temDadosEmpeno:           true,
-      pecasEspessura:           [],
-      medicoesTamanhoEsquadro:  [],
-      espessuraDeclarada:       null,
-
-      // Resultado
-      resultado:    statusGeral,
-      status:       'finalizado',
-
-      // ✅ CORRIGIDO: era "dataHoa" (typo), agora "dataHora"
-      dataHora:     serverTimestamp(),
-      data:         new Date().toLocaleDateString('pt-BR'),
-      hora:         new Date().toLocaleTimeString('pt-BR').slice(0, 5),
+      produto: form.value.produto, lote: form.value.lote, linha: form.value.linha,
+      inspetor: form.value.inspetor, formatoNome: form.value.formatoNome,
+      formatoId: formatoDoc?.id ?? null, posFolga: form.value.posFolga,
+      observacoes: form.value.observacoes || '',
+      pecas: pecasFormatadas, limitesSnapshot,
+      temDadosEmpeno: true, pecasEspessura: [], medicoesTamanhoEsquadro: [], espessuraDeclarada: null,
+      resultado: statusGeral, status: 'finalizado',
+      dataHora: serverTimestamp(),
+      data: agora.toLocaleDateString('pt-BR'),
+      hora: agora.toLocaleTimeString('pt-BR').slice(0, 5),
     })
 
-  if (navigator.vibrate) navigator.vibrate(150)
-    await Swal.fire({ title: 'Salvo!', text: 'Amostragem gravada com sucesso.', icon: 'success', timer: 2000, timerProgressBar: true, confirmButtonColor: '#3B82F6' })
+    if (navigator.vibrate) navigator.vibrate(150)
+
+    // ── Pergunta sobre WhatsApp ──
+    const { isConfirmed: enviaWA } = await Swal.fire({
+      title: 'Gravado com sucesso! 🎉',
+      html: 'Deseja enviar o relatório pelo <strong>WhatsApp</strong>?',
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: '<i class="ph-fill ph-whatsapp-logo"></i> Sim, enviar',
+      cancelButtonText: 'Não, obrigado',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+    })
+
+    if (enviaWA) {
+      // Gera e faz download do PDF
+      gerarPDFInspecao(statusGeral, agora)
+
+      // Pequena pausa para o download iniciar antes de abrir o WhatsApp
+      await new Promise(r => setTimeout(r, 600))
+
+      // Abre WhatsApp com o texto
+      const fmtNum = (v) => (v !== null && v !== '' && !isNaN(Number(v))) ? Number(v).toFixed(2).replace('.', ',') : '--'
+      const emoji  = (v, min, max) => validar(v, min, max) === 'aprovado' ? '🟢' : validar(v, min, max) === 'reprovado' ? '🔴' : '⚪'
+      const data   = agora.toLocaleDateString('pt-BR')
+      const hora   = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+      let txt = `*RELATÓRIO DE EMPENO*\n`
+      txt += `*Data:* ${data} às ${hora}\n`
+      txt += `*Responsável:* ${form.value.inspetor}\n`
+      txt += `*Linha:* ${form.value.linha}\n`
+      txt += `*Produto:* ${form.value.produto}\n`
+      txt += `*Formato:* ${form.value.formatoNome}\n`
+      txt += `*Lote:* ${form.value.lote}\n\n`
+      txt += `Range Lateral:(${fmtNum(cfg.latMin)} a ${fmtNum(cfg.latMax)})\n`
+      txt += `Range Central:(${fmtNum(cfg.centMin)} a ${fmtNum(cfg.centMax)})\n`
+
+      form.value.pecas.forEach((p, idx) => {
+        txt += `\n*Peça ${idx + 1}*\n`
+        txt += `${emoji(p.latA, cfg.latMin, cfg.latMax)} Lado A: ${fmtNum(p.latA)}\n`
+        txt += `${emoji(p.latB, cfg.latMin, cfg.latMax)} Lado B: ${fmtNum(p.latB)}\n`
+        txt += `${emoji(p.latC, cfg.latMin, cfg.latMax)} Lado C: ${fmtNum(p.latC)}\n`
+        txt += `${emoji(p.latD, cfg.latMin, cfg.latMax)} Lado D: ${fmtNum(p.latD)}\n`
+        txt += `*Central*\n`
+        txt += `${emoji(p.cenA, cfg.centMin, cfg.centMax)} Lado A: ${fmtNum(p.cenA)}\n`
+        txt += `${emoji(p.cenB, cfg.centMin, cfg.centMax)} Lado B: ${fmtNum(p.cenB)}\n`
+      })
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+    }
+
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {
     console.error('Erro ao guardar inspeção:', e)

@@ -120,7 +120,15 @@
               <div class="w-full md:w-1/3"><button type="button" @click="adicionarPeca" class="w-full border-2 border-dashed border-gray-300 dark:border-slate-700 text-gray-500 hover:text-blue-600 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-slate-800 py-6 rounded-xl font-bold transition-all flex flex-col items-center gap-2"><i class="ph-bold ph-plus-circle text-2xl"></i> Adicionar Nova Peça</button></div>
               <div class="w-full md:w-2/3"><h3 class="text-xs font-bold text-gray-500 uppercase mb-2"><i class="ph-bold ph-chat-text"></i> Observações do Lote</h3><textarea v-model="form.observacoes" rows="3" class="w-full input-clean resize-none bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border-gray-200 dark:border-slate-700" placeholder="Anotações opcionais..."></textarea></div>
             </div>
-            <div class="flex justify-end pt-2"><button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-12 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 text-lg"><i class="ph-bold ph-floppy-disk"></i> Gravar Amostragem</button></div>
+            <div class="flex justify-end gap-3 pt-2">
+              <button type="button" @click="enviarWhatsApp"
+                class="flex items-center gap-2 px-6 py-4 rounded-xl font-bold border-2 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 transition-all text-base">
+                <i class="ph-fill ph-whatsapp-logo text-xl"></i> WhatsApp
+              </button>
+              <button type="submit" class="bg-emerald-600 hover:bg-emerald-700 text-white px-12 py-4 rounded-xl font-bold shadow-lg transition-all flex items-center gap-2 text-lg">
+                <i class="ph-bold ph-floppy-disk"></i> Gravar Amostragem
+              </button>
+            </div>
           </form>
         </div>
 
@@ -189,6 +197,44 @@ const adicionarPeca = () => {
   form.value.pecas.push({ id: Date.now(), latA: null, latB: null, latC: null, latD: null, cenA: null, cenB: null })
 }
 const removerPeca = (index) => { form.value.pecas.splice(index, 1) }
+
+// ── Texto para WhatsApp ───────────────────────────────────────────────────────
+const enviarWhatsApp = () => {
+  const cfg = configAtiva.value
+  if (!cfg) { Swal.fire('Atenção', 'Selecione um formato válido.', 'warning'); return }
+
+  const agora  = new Date()
+  const data   = agora.toLocaleDateString('pt-BR')
+  const hora   = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+  const fmtNum = (v) => v !== null && v !== '' && !isNaN(Number(v))
+    ? Number(v).toFixed(2).replace('.', ',')
+    : '--'
+  const emoji  = (v, min, max) => validar(v, min, max) === 'aprovado' ? '🟢' : validar(v, min, max) === 'reprovado' ? '🔴' : '⚪'
+
+  let txt = `*RELATÓRIO DE EMPENO*\n`
+  txt += `*Data:* ${data} às ${hora}\n`
+  txt += `*Responsável:* ${form.value.inspetor}\n`
+  txt += `*Linha:* ${form.value.linha}\n`
+  txt += `*Produto:* ${form.value.produto}\n`
+  txt += `*Formato:* ${form.value.formatoNome}\n`
+  txt += `*Lote:* ${form.value.lote}\n`
+  txt += `\n`
+  txt += `Range Lateral:(${fmtNum(cfg.latMin)} a ${fmtNum(cfg.latMax)})\n`
+  txt += `Range Central:(${fmtNum(cfg.centMin)} a ${fmtNum(cfg.centMax)})\n`
+
+  form.value.pecas.forEach((p, idx) => {
+    txt += `\n*Peça ${idx + 1}*\n`
+    txt += `${emoji(p.latA, cfg.latMin, cfg.latMax)} Lado A: ${fmtNum(p.latA)}\n`
+    txt += `${emoji(p.latB, cfg.latMin, cfg.latMax)} Lado B: ${fmtNum(p.latB)}\n`
+    txt += `${emoji(p.latC, cfg.latMin, cfg.latMax)} Lado C: ${fmtNum(p.latC)}\n`
+    txt += `${emoji(p.latD, cfg.latMin, cfg.latMax)} Lado D: ${fmtNum(p.latD)}\n`
+    txt += `*Central*\n`
+    txt += `${emoji(p.cenA, cfg.centMin, cfg.centMax)} Lado A: ${fmtNum(p.cenA)}\n`
+    txt += `${emoji(p.cenB, cfg.centMin, cfg.centMax)} Lado B: ${fmtNum(p.cenB)}\n`
+  })
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+}
 
 // ✅ CORRIGIDO: converte para Number antes de comparar para evitar bug de tipo string
 const validar = (valor, min, max) => {

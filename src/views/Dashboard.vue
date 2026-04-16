@@ -227,6 +227,129 @@
           </button>
         </div>
 
+        <!-- ── Barra de Período Global + Filtros por Aba ─────────────────────── -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
+          <!-- Linha 1: Período -->
+          <div class="p-4 flex flex-wrap items-center gap-3 border-b border-gray-100 dark:border-slate-800 bg-gray-50/30 dark:bg-slate-800/20">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5 shrink-0">
+              <i class="ph-fill ph-calendar text-blue-500"></i> Período
+            </span>
+            <div class="flex gap-1.5 flex-wrap">
+              <button v-for="p in periodos" :key="p.valor"
+                @click="selecionarPeriodo(p.valor)"
+                class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all"
+                :class="filtroGlobal.periodo === p.valor
+                  ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-slate-700 hover:border-blue-300'"
+              >{{ p.label }}</button>
+            </div>
+            <!-- Datas customizadas -->
+            <div v-if="filtroGlobal.periodo === 'custom'" class="flex items-center gap-2 flex-wrap">
+              <input type="date" v-model="filtroGlobal.dataInicio"
+                class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <span class="text-xs text-gray-400 font-bold">até</span>
+              <input type="date" v-model="filtroGlobal.dataFim"
+                class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <button @click="aplicarPeriodoCustom"
+                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-1 transition-all">
+                <i class="ph-bold ph-magnifying-glass"></i> Buscar
+              </button>
+            </div>
+            <!-- Indicador de carregamento -->
+            <div v-if="carregandoSec" class="flex items-center gap-1.5 text-xs text-blue-500 font-bold ml-auto">
+              <i class="ph-bold ph-spinner animate-spin"></i> Atualizando...
+            </div>
+            <div v-else-if="ultimaAtualizacao" class="flex items-center gap-1.5 text-xs text-gray-400 ml-auto">
+              <i class="ph-fill ph-clock"></i>
+              {{ ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }}
+              <button @click="recarregarTudo" class="text-blue-500 hover:underline font-bold ml-1 flex items-center gap-1">
+                <i class="ph-bold ph-arrows-clockwise"></i> Atualizar
+              </button>
+            </div>
+          </div>
+
+          <!-- Linha 2: Filtros específicos da aba ativa -->
+
+          <!-- Filtros Empeno: já tem gaveta própria, só mostra resumo -->
+          <div v-if="subAbaAtiva === 'empeno'" class="px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtros</span>
+            <input v-model="filtros.texto" type="text" placeholder="Lote, produto ou inspetor..."
+              class="flex-1 min-w-[180px] bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500" />
+            <select v-model="filtros.status" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos status</option>
+              <option value="Aprovado">Aprovado</option>
+              <option value="Reprovado">Reprovado</option>
+            </select>
+            <select v-model="filtros.linha" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todas linhas</option>
+              <option v-for="l in linhasUnicas" :key="l" :value="l">{{ l }}</option>
+            </select>
+            <select v-model="filtros.formato" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Todos formatos</option>
+              <option v-for="f in formatosUnicos" :key="f" :value="f">{{ f }}</option>
+            </select>
+            <button v-if="filtrosAtivos > 0" @click="limparFiltros" class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+              <i class="ph-bold ph-x"></i> Limpar
+            </button>
+          </div>
+
+          <!-- Filtros Dimensional -->
+          <div v-if="subAbaAtiva === 'dimensional'" class="px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtros</span>
+            <input v-model="filtrosDim.texto" type="text" placeholder="Lote, produto ou inspetor..."
+              class="flex-1 min-w-[180px] bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500" />
+            <select v-model="filtrosDim.linha" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option value="">Todas linhas</option>
+              <option v-for="l in linhasUnicasDim" :key="l" :value="l">{{ l }}</option>
+            </select>
+            <select v-model="filtrosDim.status" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-violet-500">
+              <option value="">Todos status</option>
+              <option value="Aprovado">Aprovado</option>
+              <option value="Reprovado">Reprovado</option>
+            </select>
+            <button v-if="filtrosDim.texto || filtrosDim.linha || filtrosDim.status" @click="filtrosDim = { texto: '', linha: '', status: '' }" class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+              <i class="ph-bold ph-x"></i> Limpar
+            </button>
+          </div>
+
+          <!-- Filtros Atrito -->
+          <div v-if="subAbaAtiva === 'atrito'" class="px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtros</span>
+            <input v-model="filtrosAt.texto" type="text" placeholder="Lote, produto ou inspetor..."
+              class="flex-1 min-w-[180px] bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            <select v-model="filtrosAt.linha" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="">Todas linhas</option>
+              <option v-for="l in linhasUnicasAt" :key="l" :value="l">{{ l }}</option>
+            </select>
+            <select v-model="filtrosAt.classeAD" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="">Todas classes</option>
+              <option v-for="c in ['AD','AD2','AD3','AD4','AD4+']" :key="c" :value="c">{{ c }}</option>
+            </select>
+            <select v-model="filtrosAt.status" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
+              <option value="">Todos status</option>
+              <option value="Aprovado">Aprovado</option>
+              <option value="Reprovado">Reprovado</option>
+            </select>
+            <button v-if="filtrosAt.texto || filtrosAt.linha || filtrosAt.classeAD || filtrosAt.status" @click="filtrosAt = { texto: '', linha: '', classeAD: '', status: '' }" class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+              <i class="ph-bold ph-x"></i> Limpar
+            </button>
+          </div>
+
+          <!-- Filtros Relatórios -->
+          <div v-if="subAbaAtiva === 'relatorios'" class="px-4 py-3 flex items-center gap-3 flex-wrap">
+            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider">Filtros</span>
+            <input v-model="filtrosRel.texto" type="text" placeholder="Responsável ou produto..."
+              class="flex-1 min-w-[180px] bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <select v-model="filtrosRel.equipe" class="bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-2 py-1.5 text-xs text-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+              <option value="">Todas equipes</option>
+              <option v-for="e in ['1','2','3','4','ADM']" :key="e" :value="e">Equipe {{ e }}</option>
+            </select>
+            <button v-if="filtrosRel.texto || filtrosRel.equipe" @click="filtrosRel = { texto: '', equipe: '' }" class="text-xs font-bold text-red-500 hover:underline flex items-center gap-1">
+              <i class="ph-bold ph-x"></i> Limpar
+            </button>
+          </div>
+        </div>
+
         <!-- Tabela Empeno -->
         <div v-show="subAbaAtiva === 'empeno'" class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
           
@@ -248,22 +371,37 @@
               </span>
             </div>
 
-            <!-- Botão de abrir filtros -->
-            <button
-              @click="gavetaAberta = true"
-              class="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
-              :class="filtrosAtivos > 0
-                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
-                : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'"
-            >
-              <i class="ph-bold ph-funnel text-base"></i>
-              Filtros
-              <!-- Badge de filtros ativos -->
-              <span
-                v-if="filtrosAtivos > 0"
-                class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow"
-              >{{ filtrosAtivos }}</span>
-            </button>
+            <!-- Botão de abrir filtros + Exportação -->
+            <div class="flex items-center gap-2">
+              <!-- Exportação -->
+              <div class="flex items-center gap-1">
+                <button @click="exportarExcel(inspecoesFiltradas, 'empeno', filtroGlobal)"
+                  :disabled="!inspecoesFiltradas.length"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  <i class="ph-bold ph-file-xls text-base"></i> Excel
+                </button>
+                <button @click="exportarPDF(inspecoesFiltradas, 'empeno', filtroGlobal)"
+                  :disabled="!inspecoesFiltradas.length"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  <i class="ph-bold ph-file-pdf text-base"></i> PDF
+                </button>
+              </div>
+              <!-- Botão de abrir filtros avançados -->
+              <button
+                @click="gavetaAberta = true"
+                class="relative flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all"
+                :class="filtrosAtivos > 0
+                  ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                  : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-300 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400'"
+              >
+                <i class="ph-bold ph-funnel text-base"></i>
+                Filtros
+                <span
+                  v-if="filtrosAtivos > 0"
+                  class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[10px] font-black w-5 h-5 rounded-full flex items-center justify-center shadow"
+                >{{ filtrosAtivos }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Tags de filtros ativos -->
@@ -271,14 +409,6 @@
             <span v-if="filtros.texto" class="inline-flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
               <i class="ph-bold ph-magnifying-glass"></i> "{{ filtros.texto }}"
               <button @click="filtros.texto = ''" class="ml-1 hover:text-red-500 transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
-            </span>
-            <span v-if="filtros.dataInicio" class="inline-flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
-              <i class="ph-bold ph-calendar"></i> De {{ filtros.dataInicio }}
-              <button @click="filtros.dataInicio = ''" class="ml-1 hover:text-red-500 transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
-            </span>
-            <span v-if="filtros.dataFim" class="inline-flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
-              <i class="ph-bold ph-calendar"></i> Até {{ filtros.dataFim }}
-              <button @click="filtros.dataFim = ''" class="ml-1 hover:text-red-500 transition-colors"><i class="ph-bold ph-x text-xs"></i></button>
             </span>
             <span v-if="filtros.status" class="inline-flex items-center gap-1.5 text-xs font-bold bg-white dark:bg-slate-800 border border-blue-200 dark:border-blue-800/50 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full">
               <i class="ph-bold ph-check-circle"></i> {{ filtros.status }}
@@ -373,12 +503,14 @@
                 {{ dimensionaisFiltrados.length }} resultado{{ dimensionaisFiltrados.length !== 1 ? 's' : '' }}
               </span>
             </div>
-            <div class="flex items-center gap-2">
-              <span v-if="ultimaAtualizacao" class="text-xs text-gray-400">
-                Atualizado {{ ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }}
-              </span>
-              <button @click="carregarColecoesSec()" class="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
-                <i class="ph-bold ph-arrows-clockwise"></i> Atualizar
+            <div class="flex items-center gap-1">
+              <button @click="exportarExcel(dimensionaisFiltrados, 'dimensional', filtroGlobal)" :disabled="!dimensionaisFiltrados.length"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <i class="ph-bold ph-file-xls text-base"></i> Excel
+              </button>
+              <button @click="exportarPDF(dimensionaisFiltrados, 'dimensional', filtroGlobal)" :disabled="!dimensionaisFiltrados.length"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <i class="ph-bold ph-file-pdf text-base"></i> PDF
               </button>
             </div>
           </div>
@@ -446,12 +578,14 @@
                 {{ atritoFiltrados.length }} resultado{{ atritoFiltrados.length !== 1 ? 's' : '' }}
               </span>
             </div>
-            <div class="flex items-center gap-2">
-              <span v-if="ultimaAtualizacao" class="text-xs text-gray-400">
-                Atualizado {{ ultimaAtualizacao.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) }}
-              </span>
-              <button @click="carregarColecoesSec()" class="text-xs font-bold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline">
-                <i class="ph-bold ph-arrows-clockwise"></i> Atualizar
+            <div class="flex items-center gap-1">
+              <button @click="exportarExcel(atritoFiltrados, 'atrito', filtroGlobal)" :disabled="!atritoFiltrados.length"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <i class="ph-bold ph-file-xls text-base"></i> Excel
+              </button>
+              <button @click="exportarPDF(atritoFiltrados, 'atrito', filtroGlobal)" :disabled="!atritoFiltrados.length"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                <i class="ph-bold ph-file-pdf text-base"></i> PDF
               </button>
             </div>
           </div>
@@ -527,10 +661,22 @@
                 {{ relatoriosFiltrados.length }} resultado{{ relatoriosFiltrados.length !== 1 ? 's' : '' }}
               </span>
             </div>
-            <router-link v-if="authStore.userProfile !== 'analista'" to="/relatorio-turno"
-              class="flex items-center gap-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all">
-              <i class="ph-bold ph-plus-circle"></i> Novo Relatório
-            </router-link>
+            <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1">
+                <button @click="exportarExcel(relatoriosFiltrados, 'relatorios', filtroGlobal)" :disabled="!relatoriosFiltrados.length"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  <i class="ph-bold ph-file-xls text-base"></i> Excel
+                </button>
+                <button @click="exportarPDF(relatoriosFiltrados, 'relatorios', filtroGlobal)" :disabled="!relatoriosFiltrados.length"
+                  class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800/40 transition-all disabled:opacity-40 disabled:cursor-not-allowed">
+                  <i class="ph-bold ph-file-pdf text-base"></i> PDF
+                </button>
+              </div>
+              <router-link v-if="authStore.userProfile !== 'analista'" to="/relatorio-turno"
+                class="flex items-center gap-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg transition-all">
+                <i class="ph-bold ph-plus-circle"></i> Novo Relatório
+              </router-link>
+            </div>
           </div>
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm whitespace-nowrap">
@@ -993,36 +1139,12 @@
               </div>
             </div>
 
-            <!-- Intervalo de datas -->
-            <div>
-              <label class="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-1.5 mb-2">
-                <i class="ph-bold ph-calendar text-blue-500"></i> Intervalo de Datas
-              </label>
-              <div class="space-y-2">
-                <div>
-                  <span class="text-xs text-gray-400 font-bold block mb-1">De</span>
-                  <input
-                    v-model="filtros.dataInicio"
-                    type="date"
-                    class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <span class="text-xs text-gray-400 font-bold block mb-1">Até</span>
-                  <input
-                    v-model="filtros.dataFim"
-                    type="date"
-                    class="w-full bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <!-- Atalhos de data -->
-              <div class="flex flex-wrap gap-2 mt-2">
-                <button @click="atalhoData('hoje')"         class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all border border-gray-200 dark:border-slate-700">Hoje</button>
-                <button @click="atalhoData('semana')"       class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all border border-gray-200 dark:border-slate-700">Esta semana</button>
-                <button @click="atalhoData('mes')"          class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all border border-gray-200 dark:border-slate-700">Este mês</button>
-                <button @click="atalhoData('mes_passado')"  class="text-xs font-bold px-2.5 py-1 rounded-lg bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-gray-400 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900/30 dark:hover:text-blue-400 transition-all border border-gray-200 dark:border-slate-700">Mês passado</button>
-              </div>
+            <!-- Intervalo de datas — controlado pelo período global acima -->
+            <div class="bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 rounded-xl p-3 flex items-start gap-2">
+              <i class="ph-fill ph-info text-blue-500 text-base mt-0.5 shrink-0"></i>
+              <p class="text-xs text-blue-700 dark:text-blue-300 font-medium leading-relaxed">
+                O período de datas é controlado pela barra de <strong>Período</strong> acima das abas. Selecione "24h", "7 dias", "30 dias", "90 dias" ou "Personalizado" para ajustar o intervalo de busca.
+              </p>
             </div>
 
             <!-- Status -->
@@ -1480,7 +1602,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { signOut } from 'firebase/auth'
 import { collection, query, orderBy, onSnapshot, getDocs, doc, updateDoc, deleteDoc, where } from 'firebase/firestore'
@@ -1488,6 +1610,7 @@ import Swal from 'sweetalert2'
 import { auth, db } from '../firebase'
 import { useAuthStore } from '../stores/auth'
 import Sidebar from '../components/Sidebar.vue'
+import { exportarExcel, exportarPDF } from '../composables/useExport'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -1511,12 +1634,16 @@ const fecharModalRelatorio = () => { modalRelatorioAberto.value = false; relator
 
 // últimos 7 dias
 const relatoriosFiltrados = computed(() => {
-  const limite7d = Date.now() - 7 * 24 * 60 * 60 * 1000
-  return relatorios.value.filter(d => {
-    if (d.dataHora?.toDate) return d.dataHora.toDate().getTime() >= limite7d
-    if (d.dataHora?.seconds) return d.dataHora.seconds * 1000 >= limite7d
-    return false
-  })
+  let lista = [...relatorios.value]
+  if (filtrosRel.value.texto) {
+    const t = filtrosRel.value.texto.toLowerCase()
+    lista = lista.filter(r =>
+      (r.responsavel || '').toLowerCase().includes(t) ||
+      (r.linhas || []).some(l => (l.referencia || '').toLowerCase().includes(t))
+    )
+  }
+  if (filtrosRel.value.equipe) lista = lista.filter(r => r.equipe === filtrosRel.value.equipe)
+  return lista
 })
 
 const _situacoesDash = [
@@ -1563,12 +1690,15 @@ const fecharModalAtrito = () => {
 }
 
 const atritoFiltrados = computed(() => {
-  const limite24h = Date.now() - 24 * 60 * 60 * 1000
-  return atrito.value.filter(d => {
-    if (d.dataHora?.toDate) return d.dataHora.toDate().getTime() >= limite24h
-    if (d.dataHora?.seconds) return d.dataHora.seconds * 1000 >= limite24h
-    return false
-  })
+  let lista = [...atrito.value]
+  if (filtrosAt.value.texto) {
+    const t = filtrosAt.value.texto.toLowerCase()
+    lista = lista.filter(a => (a.produto || '').toLowerCase().includes(t) || (a.lote || '').toLowerCase().includes(t) || (a.inspetor || '').toLowerCase().includes(t))
+  }
+  if (filtrosAt.value.linha)    lista = lista.filter(a => a.linha === filtrosAt.value.linha)
+  if (filtrosAt.value.classeAD) lista = lista.filter(a => a.classeAD === filtrosAt.value.classeAD)
+  if (filtrosAt.value.status)   lista = lista.filter(a => a.resultado === filtrosAt.value.status)
+  return lista
 })
 
 const corClasseAD = (nome) => {
@@ -1615,12 +1745,14 @@ const fecharModalDimensional = () => {
 
 // Últimas 24h da coleção dimensionais
 const dimensionaisFiltrados = computed(() => {
-  const limite24h = Date.now() - 24 * 60 * 60 * 1000
-  return dimensionais.value.filter(d => {
-    if (d.dataHora?.toDate) return d.dataHora.toDate().getTime() >= limite24h
-    if (d.dataHora?.seconds) return d.dataHora.seconds * 1000 >= limite24h
-    return false
-  })
+  let lista = [...dimensionais.value]
+  if (filtrosDim.value.texto) {
+    const t = filtrosDim.value.texto.toLowerCase()
+    lista = lista.filter(d => (d.produto || '').toLowerCase().includes(t) || (d.lote || '').toLowerCase().includes(t) || (d.inspetor || '').toLowerCase().includes(t))
+  }
+  if (filtrosDim.value.linha)  lista = lista.filter(d => d.linha === filtrosDim.value.linha)
+  if (filtrosDim.value.status) lista = lista.filter(d => d.resultado === filtrosDim.value.status)
+  return lista
 })
 
 // Helpers espessura no modal
@@ -1778,8 +1910,6 @@ const gavetaAberta = ref(false)
 
 const filtros = ref({
   texto:      '',
-  dataInicio: '',
-  dataFim:    '',
   status:     '',
   linha:      '',
   posFolga:   '',
@@ -1787,7 +1917,7 @@ const filtros = ref({
 })
 
 const limparFiltros = () => {
-  filtros.value = { texto: '', dataInicio: '', dataFim: '', status: '', linha: '', posFolga: '', formato: '' }
+  filtros.value = { texto: '', status: '', linha: '', posFolga: '', formato: '' }
 }
 
 // Conta quantos filtros estão ativos
@@ -1827,22 +1957,10 @@ const formatosUnicos = computed(() =>
   [...new Set(inspecoes.value.map(i => i.formatoNome).filter(Boolean))].sort()
 )
 
-// Lógica de filtragem
+// Lógica de filtragem — dados já foram pré-filtrados por período no Firestore
 const inspecoesFiltradas = computed(() => {
   let lista = [...inspecoes.value]
 
-  // Sem filtros ativos → exibe apenas as últimas 24 horas
-  if (filtrosAtivos.value === 0) {
-    const limite24h = Date.now() - 24 * 60 * 60 * 1000
-    lista = lista.filter(i => {
-      if (i.dataHora?.toDate) return i.dataHora.toDate().getTime() >= limite24h
-      if (i.dataHora?.seconds) return i.dataHora.seconds * 1000 >= limite24h
-      return false
-    })
-    return lista
-  }
-
-  // Busca por texto (lote, produto, inspetor)
   if (filtros.value.texto) {
     const termo = filtros.value.texto.toLowerCase()
     lista = lista.filter(i =>
@@ -1851,44 +1969,10 @@ const inspecoesFiltradas = computed(() => {
       (i.inspetor  || '').toLowerCase().includes(termo)
     )
   }
-
-  // Intervalo de datas
-  if (filtros.value.dataInicio) {
-    lista = lista.filter(i => {
-      const dataStr = formatarData(i) // dd/mm/yyyy
-      const [d, m, a] = dataStr.split('/')
-      if (!d || !m || !a) return false
-      return `${a}-${m}-${d}` >= filtros.value.dataInicio
-    })
-  }
-  if (filtros.value.dataFim) {
-    lista = lista.filter(i => {
-      const dataStr = formatarData(i)
-      const [d, m, a] = dataStr.split('/')
-      if (!d || !m || !a) return false
-      return `${a}-${m}-${d}` <= filtros.value.dataFim
-    })
-  }
-
-  // Status
-  if (filtros.value.status) {
-    lista = lista.filter(i => i.resultado === filtros.value.status)
-  }
-
-  // Linha de produção
-  if (filtros.value.linha) {
-    lista = lista.filter(i => i.linha === filtros.value.linha)
-  }
-
-  // Pós Folga
-  if (filtros.value.posFolga) {
-    lista = lista.filter(i => i.posFolga === filtros.value.posFolga)
-  }
-
-  // Formato do produto
-  if (filtros.value.formato) {
-    lista = lista.filter(i => i.formatoNome === filtros.value.formato)
-  }
+  if (filtros.value.status)   lista = lista.filter(i => i.resultado === filtros.value.status)
+  if (filtros.value.linha)    lista = lista.filter(i => i.linha === filtros.value.linha)
+  if (filtros.value.posFolga) lista = lista.filter(i => i.posFolga === filtros.value.posFolga)
+  if (filtros.value.formato)  lista = lista.filter(i => i.formatoNome === filtros.value.formato)
 
   return lista
 })
@@ -2226,39 +2310,98 @@ const graficoLinhasOptions = computed(() => {
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 const ultimaAtualizacao = ref(null)
+const carregandoSec     = ref(false)
 
-// Helpers de timestamp
-const ts30d = () => { const d = new Date(); d.setDate(d.getDate() - 30); return d }
-const ts7d  = () => { const d = new Date(); d.setDate(d.getDate() - 7);  return d }
+// ── Filtro Global de Período ──────────────────────────────────────────────────
+const periodos = [
+  { valor: '24h',    label: 'Últimas 24h' },
+  { valor: '7d',     label: '7 dias' },
+  { valor: '30d',    label: '30 dias' },
+  { valor: '90d',    label: '90 dias' },
+  { valor: 'custom', label: 'Personalizado' },
+]
 
-// Carrega dimensionais/atrito/relatórios uma vez (getDocs com filtro server-side)
-const carregarColecoesSec = async () => {
-  const [snapDim, snapAt, snapRel] = await Promise.all([
-    getDocs(query(collection(db, 'dimensionais'),    orderBy('dataHora', 'desc'), where('dataHora', '>=', ts7d()))),
-    getDocs(query(collection(db, 'atrito'),          orderBy('dataHora', 'desc'), where('dataHora', '>=', ts7d()))),
-    getDocs(query(collection(db, 'relatorios_turno'),orderBy('dataHora', 'desc'), where('dataHora', '>=', ts7d()))),
-  ])
-  dimensionais.value = snapDim.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-  atrito.value       = snapAt.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-  relatorios.value   = snapRel.docs.map(doc => ({ id: doc.id, ...doc.data() }))
-  ultimaAtualizacao.value = new Date()
+const filtroGlobal = ref({ periodo: '24h', dataInicio: '', dataFim: '' })
+
+// Retorna o Timestamp de início com base no período selecionado
+const tsInicio = () => {
+  const { periodo, dataInicio } = filtroGlobal.value
+  if (periodo === 'custom' && dataInicio) {
+    const d = new Date(dataInicio + 'T00:00:00')
+    return d
+  }
+  const d = new Date()
+  if (periodo === '24h')  d.setHours(d.getHours() - 24)
+  if (periodo === '7d')   d.setDate(d.getDate() - 7)
+  if (periodo === '30d')  d.setDate(d.getDate() - 30)
+  if (periodo === '90d')  d.setDate(d.getDate() - 90)
+  return d
+}
+const tsFim = () => {
+  const { periodo, dataFim } = filtroGlobal.value
+  if (periodo === 'custom' && dataFim) {
+    const d = new Date(dataFim + 'T23:59:59')
+    return d
+  }
+  return new Date()
 }
 
-onMounted(async () => {
-  // formatos: um getDocs simples (dados de configuração, raramente mudam)
-  const snapFormatos = await getDocs(collection(db, 'formatos'))
-  formatos.value = snapFormatos.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+// ── Filtros específicos por aba ───────────────────────────────────────────────
+const filtrosDim = ref({ texto: '', linha: '', status: '' })
+const filtrosAt  = ref({ texto: '', linha: '', classeAD: '', status: '' })
+const filtrosRel = ref({ texto: '', equipe: '' })
 
-  // inspecoes: real-time filtrado nos últimos 30 dias para stats/gráficos
-  // + contagem total separada para o card "Total de Lotes"
-  const q30d = query(collection(db, 'inspecoes'), orderBy('dataHora', 'desc'), where('dataHora', '>=', ts30d()))
-  unsubscribe = onSnapshot(q30d, (snapshot) => {
+// Linhas únicas extraídas dos dados carregados
+const linhasUnicasDim = computed(() => [...new Set(dimensionais.value.map(d => d.linha).filter(Boolean))].sort())
+const linhasUnicasAt  = computed(() => [...new Set(atrito.value.map(d => d.linha).filter(Boolean))].sort())
+
+// ── Carregamento das coleções secundárias ─────────────────────────────────────
+const carregarColecoesSec = async () => {
+  carregandoSec.value = true
+  try {
+    const inicio = tsInicio()
+    const fim    = tsFim()
+    const [snapDim, snapAt, snapRel] = await Promise.all([
+      getDocs(query(collection(db, 'dimensionais'),    orderBy('dataHora', 'desc'), where('dataHora', '>=', inicio), where('dataHora', '<=', fim))),
+      getDocs(query(collection(db, 'atrito'),          orderBy('dataHora', 'desc'), where('dataHora', '>=', inicio), where('dataHora', '<=', fim))),
+      getDocs(query(collection(db, 'relatorios_turno'),orderBy('dataHora', 'desc'), where('dataHora', '>=', inicio), where('dataHora', '<=', fim))),
+    ])
+    dimensionais.value = snapDim.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    atrito.value       = snapAt.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    relatorios.value   = snapRel.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+    ultimaAtualizacao.value = new Date()
+  } finally {
+    carregandoSec.value = false
+  }
+}
+
+// Recarrega o onSnapshot de empeno + as coleções secundárias
+const recarregarTudo = async () => {
+  // Recria o listener de empeno com o novo período
+  if (unsubscribe) { unsubscribe(); unsubscribe = null }
+  const inicio = tsInicio()
+  const fim    = tsFim()
+  const q = query(collection(db, 'inspecoes'), orderBy('dataHora', 'desc'), where('dataHora', '>=', inicio), where('dataHora', '<=', fim))
+  unsubscribe = onSnapshot(q, (snapshot) => {
     inspecoes.value  = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))
     carregando.value = false
   })
-
-  // dimensionais, atrito, relatórios: getDocs com filtro de 7 dias
   await carregarColecoesSec()
+}
+
+const selecionarPeriodo = (p) => {
+  filtroGlobal.value.periodo = p
+  if (p !== 'custom') recarregarTudo()
+}
+
+const aplicarPeriodoCustom = () => {
+  if (filtroGlobal.value.dataInicio) recarregarTudo()
+}
+
+onMounted(async () => {
+  const snapFormatos = await getDocs(collection(db, 'formatos'))
+  formatos.value = snapFormatos.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+  await recarregarTudo()
 })
 
 onUnmounted(() => {

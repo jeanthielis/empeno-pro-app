@@ -9,6 +9,7 @@ import NovaInspecao from '../views/NovaInspecao.vue'
 import NovaInspecaoDimensional from '../views/NovaInspecaoDimensional.vue'
 import NovaInspecaoAtrito from '../views/NovaInspecaoAtrito.vue'
 import RelatorioFinalTurno from '../views/RelatorioFinalTurno.vue'
+import RelatorioGeral from '../views/RelatorioGeral.vue'
 import Admin from '../views/Admin.vue'
 
 const router = createRouter({
@@ -29,7 +30,8 @@ const router = createRouter({
     { path: '/relatorio-turno',name: 'RelatorioFinalTurno',    component: RelatorioFinalTurno,     meta: { requiresAuth: true, roles: ['admin', 'inspetor'] } },
 
     // Apenas Admin
-    { path: '/admin',          name: 'Admin',                  component: Admin,                   meta: { requiresAuth: true, roles: ['admin'] } },
+    { path: '/admin',             name: 'Admin',          component: Admin,          meta: { requiresAuth: true, roles: ['admin'] } },
+    { path: '/relatorio-geral',   name: 'RelatorioGeral', component: RelatorioGeral, meta: { requiresAuth: true, roles: ['admin', 'analista'] } },
   ]
 })
 

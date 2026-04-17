@@ -42,6 +42,15 @@
         <i class="ph ph-gear text-2xl shrink-0"></i>
         <transition name="fade"><span v-if="!isCollapsed" class="whitespace-nowrap">Administração</span></transition>
       </router-link>
+
+      <router-link v-if="authStore.userProfile !== 'inspetor'" to="/relatorio-geral"
+        class="flex items-center w-full py-3 rounded-lg font-bold transition-colors hover:bg-gray-50 dark:hover:bg-slate-800 text-gray-500 dark:text-gray-400"
+        active-class="bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400"
+        :class="isCollapsed ? 'justify-center px-0' : 'justify-start px-4 gap-3'"
+        :title="isCollapsed ? 'Rel. Não Conformidades' : ''">
+        <i class="ph ph-warning-circle text-2xl shrink-0"></i>
+        <transition name="fade"><span v-if="!isCollapsed" class="whitespace-nowrap">Não Conformidades</span></transition>
+      </router-link>
     </nav>
 
     <!-- Tema -->
@@ -116,6 +125,15 @@
         :class="$route.path === '/admin' ? '' : 'text-gray-400 dark:text-gray-500'">
         <i class="ph-fill ph-gear text-2xl"></i>
         <span class="text-[10px] font-bold">Admin</span>
+      </router-link>
+
+      <!-- Não Conformidades — admin e analista -->
+      <router-link v-if="authStore.userProfile !== 'inspetor'" to="/relatorio-geral"
+        class="flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-colors min-w-[56px]"
+        active-class="text-red-600 dark:text-red-400"
+        :class="$route.path === '/relatorio-geral' ? '' : 'text-gray-400 dark:text-gray-500'">
+        <i class="ph-fill ph-warning-circle text-2xl"></i>
+        <span class="text-[10px] font-bold">NCs</span>
       </router-link>
 
       <!-- Tema -->

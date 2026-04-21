@@ -28,69 +28,153 @@
       </div>
 
       <!-- ======================== FORMATOS ======================== -->
-      <div v-if="tab === 'formatos'" class="space-y-6">
+      <div v-if="tab === 'formatos'" class="space-y-4">
         <div class="flex justify-between items-center">
           <div class="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
             <button @click="mostrarInativos = false" :class="!mostrarInativos ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-1.5 rounded-md text-sm font-bold transition-all">Ativos</button>
-            <button @click="mostrarInativos = true" :class="mostrarInativos ? 'bg-white dark:bg-slate-700 shadow-sm text-gray-800 dark:text-white' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-1.5 rounded-md text-sm font-bold transition-all">Ver Arquivados</button>
+            <button @click="mostrarInativos = true"  :class="mostrarInativos  ? 'bg-white dark:bg-slate-700 shadow-sm text-gray-800 dark:text-white'  : 'text-gray-500 hover:text-gray-700'" class="px-4 py-1.5 rounded-md text-sm font-bold transition-all">Ver Arquivados</button>
           </div>
-          <button @click="novoFormato" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 transition-transform hover:scale-105"><i class="ph-bold ph-plus-circle text-lg"></i> Criar Formato</button>
+          <button @click="novoFormato" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold shadow-md hover:bg-blue-700 flex items-center gap-2 transition-all">
+            <i class="ph-bold ph-plus-circle text-lg"></i> Criar Formato
+          </button>
         </div>
-        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          <div v-for="fmt in formatosFiltrados" :key="fmt.id" :class="fmt.ativo === false ? 'opacity-60 grayscale' : ''" class="bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm transition-all relative">
-            <div v-if="fmt.ativo === false" class="absolute -top-3 -right-3 bg-gray-600 text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">Arquivado</div>
-            <div class="flex justify-between items-center mb-6 border-b border-gray-100 dark:border-slate-800 pb-4">
-              <div class="flex-1 mr-4">
-                <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Nome do Formato</label>
-                <input v-model="fmt.nome" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="text-xl font-bold bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-1.5 outline-none focus:border-blue-500 text-blue-700 dark:text-blue-400 w-full transition-colors disabled:bg-transparent disabled:border-transparent">
-              </div>
-              <button v-if="fmt.ativo !== false" @click="arquivar('formatos', fmt)" class="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 p-2.5 rounded-lg transition-colors" title="Arquivar Formato"><i class="ph-bold ph-archive text-xl"></i></button>
-              <button v-else @click="restaurar('formatos', fmt)" class="text-emerald-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 p-2.5 rounded-lg transition-colors" title="Restaurar Formato"><i class="ph-bold ph-arrow-counter-clockwise text-xl"></i></button>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div class="space-y-4">
-                <div class="flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider"><i class="ph-fill ph-squares-four"></i> Empeno (mm)</div>
-                <div class="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-4 rounded-xl">
-                  <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase block mb-2">Lateral (Mín / Máx)</span>
-                  <div class="flex items-center gap-2">
-                    <input type="number" step="0.01" v-model="fmt.latMin" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                    <span class="text-gray-300 font-bold">/</span>
-                    <input type="number" step="0.01" v-model="fmt.latMax" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                  </div>
-                </div>
-                <div class="bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-800/30 p-4 rounded-xl">
-                  <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase block mb-2">Central (Mín / Máx)</span>
-                  <div class="flex items-center gap-2">
-                    <input type="number" step="0.01" v-model="fmt.centMin" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                    <span class="text-gray-300 font-bold">/</span>
-                    <input type="number" step="0.01" v-model="fmt.centMax" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-blue-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                  </div>
-                </div>
-              </div>
-              <div class="space-y-4">
-                <div class="flex items-center gap-2 text-sm font-bold text-orange-600 dark:text-orange-400 uppercase tracking-wider"><i class="ph-fill ph-ruler"></i> Dimensional (mm)</div>
-                <div class="bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-800/30 p-4 rounded-xl">
-                  <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase block mb-2">Tamanho (Mín / Máx)</span>
-                  <div class="flex items-center gap-2">
-                    <input type="number" step="0.01" v-model="fmt.tamanhoMin" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-orange-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                    <span class="text-gray-300 font-bold">/</span>
-                    <input type="number" step="0.01" v-model="fmt.tamanhoMax" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-orange-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                  </div>
-                </div>
-                <div class="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-800/30 p-4 rounded-xl">
-                  <span class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase block mb-2">Esquadro (Mín / Máx)</span>
-                  <div class="flex items-center gap-2">
-                    <input type="number" step="0.01" v-model="fmt.esquadroMin" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-amber-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                    <span class="text-gray-300 font-bold">/</span>
-                    <input type="number" step="0.01" v-model="fmt.esquadroMax" @change="salvar(fmt)" :disabled="fmt.ativo === false" class="w-full text-center p-2 bg-white dark:bg-slate-950 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-amber-500 font-bold text-gray-700 dark:text-gray-300 disabled:opacity-50">
-                  </div>
-                </div>
-              </div>
-            </div>
+
+        <!-- Tabela compacta -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50">
+                  <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Formato</th>
+                  <!-- Empeno -->
+                  <th class="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wider" colspan="2">
+                    <span class="flex items-center justify-center gap-1 text-blue-500"><i class="ph-fill ph-squares-four"></i> Lat Mín / Máx</span>
+                  </th>
+                  <th class="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wider" colspan="2">
+                    <span class="flex items-center justify-center gap-1 text-blue-400"><i class="ph-fill ph-crosshair"></i> Cent Mín / Máx</span>
+                  </th>
+                  <!-- Dimensional -->
+                  <th class="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wider" colspan="2">
+                    <span class="flex items-center justify-center gap-1 text-orange-500"><i class="ph-fill ph-ruler"></i> Tam Mín / Máx</span>
+                  </th>
+                  <th class="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wider" colspan="2">
+                    <span class="flex items-center justify-center gap-1 text-amber-500"><i class="ph-fill ph-frame-corners"></i> Esq Mín / Máx</span>
+                  </th>
+                  <!-- Tamanho 2 — só retangulares -->
+                  <th class="px-2 py-3 text-center text-[10px] font-bold uppercase tracking-wider" colspan="2">
+                    <span class="flex items-center justify-center gap-1 text-orange-400"><i class="ph-fill ph-ruler"></i> Tam2 Mín / Máx <span class="text-gray-400 font-normal normal-case">(rect.)</span></span>
+                  </th>
+                  <th class="px-3 py-3 text-center text-xs font-bold text-gray-400 uppercase">Ação</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
+                <tr v-for="fmt in formatosFiltrados" :key="fmt.id"
+                  class="transition-colors hover:bg-gray-50/50 dark:hover:bg-slate-800/30"
+                  :class="fmt.ativo === false ? 'opacity-50' : ''">
+
+                  <!-- Nome -->
+                  <td class="px-4 py-2 min-w-[110px]">
+                    <div class="relative">
+                      <span v-if="fmt.ativo === false" class="absolute -top-1 -right-1 text-[9px] font-black bg-gray-500 text-white px-1.5 py-0.5 rounded-full leading-none">ARQ</span>
+                      <input v-model="fmt.nome" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                        class="w-full font-black text-blue-700 dark:text-blue-400 bg-transparent border border-transparent hover:border-gray-200 dark:hover:border-slate-700 focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 rounded-lg px-2 py-1 outline-none transition-all text-sm disabled:cursor-not-allowed" />
+                    </div>
+                  </td>
+
+                  <!-- Lat Min/Max -->
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.latMin" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.latMax" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-blue-50/50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/30 rounded-lg outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+
+                  <!-- Cent Min/Max -->
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.centMin" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-blue-50/30 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-900/20 rounded-lg outline-none focus:border-blue-400 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.centMax" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-blue-50/30 dark:bg-blue-900/5 border border-blue-100 dark:border-blue-900/20 rounded-lg outline-none focus:border-blue-400 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+
+                  <!-- Tam Min/Max -->
+                  <td class="px-1 py-2 w-24">
+                    <input type="number" step="0.01" v-model="fmt.tamanhoMin" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-lg outline-none focus:border-orange-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+                  <td class="px-1 py-2 w-24">
+                    <input type="number" step="0.01" v-model="fmt.tamanhoMax" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-orange-50/50 dark:bg-orange-900/10 border border-orange-100 dark:border-orange-900/30 rounded-lg outline-none focus:border-orange-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+
+                  <!-- Esq Min/Max -->
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.esquadroMin" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+                  <td class="px-1 py-2 w-20">
+                    <input type="number" step="0.01" v-model="fmt.esquadroMax" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                      class="w-full text-center py-1.5 px-1 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-lg outline-none focus:border-amber-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                  </td>
+
+                  <!-- Tamanho 2 — visível só em formatos retangulares -->
+                  <template v-if="isRetangular(fmt.nome)">
+                    <td class="px-1 py-2 w-24">
+                      <input type="number" step="0.01" v-model="fmt.tamanhoMin2" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                        placeholder="—"
+                        class="w-full text-center py-1.5 px-1 bg-orange-100/60 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-lg outline-none focus:border-orange-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                    </td>
+                    <td class="px-1 py-2 w-24">
+                      <input type="number" step="0.01" v-model="fmt.tamanhoMax2" @change="salvar(fmt)" :disabled="fmt.ativo === false"
+                        placeholder="—"
+                        class="w-full text-center py-1.5 px-1 bg-orange-100/60 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-lg outline-none focus:border-orange-500 focus:bg-white dark:focus:bg-slate-800 font-bold text-gray-700 dark:text-gray-300 text-xs disabled:opacity-50 transition-all" />
+                    </td>
+                  </template>
+                  <template v-else>
+                    <td class="px-1 py-2 w-24">
+                      <div class="w-full text-center py-1.5 text-xs text-gray-300 dark:text-slate-600 select-none">—</div>
+                    </td>
+                    <td class="px-1 py-2 w-24">
+                      <div class="w-full text-center py-1.5 text-xs text-gray-300 dark:text-slate-600 select-none">—</div>
+                    </td>
+                  </template>
+
+                  <!-- Ação -->
+                  <td class="px-3 py-2 text-center">
+                    <button v-if="fmt.ativo !== false" @click="arquivar('formatos', fmt)"
+                      class="p-1.5 rounded-lg text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors" title="Arquivar">
+                      <i class="ph-bold ph-archive text-base"></i>
+                    </button>
+                    <button v-else @click="restaurar('formatos', fmt)"
+                      class="p-1.5 rounded-lg text-emerald-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 transition-colors" title="Restaurar">
+                      <i class="ph-bold ph-arrow-counter-clockwise text-base"></i>
+                    </button>
+                  </td>
+                </tr>
+
+                <!-- Linha vazia -->
+                <tr v-if="formatosFiltrados.length === 0">
+                  <td colspan="13" class="px-4 py-12 text-center">
+                    <i class="ph-fill ph-folder-open text-4xl text-gray-300 dark:text-slate-600 mb-2 block"></i>
+                    <p class="text-gray-500 font-bold">Nenhum formato encontrado</p>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
           </div>
-          <div v-if="formatosFiltrados.length === 0" class="col-span-2 text-center p-12 bg-gray-50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-gray-300 dark:border-slate-700">
-            <i class="ph-fill ph-folder-open text-4xl text-gray-400 mb-2"></i>
-            <h3 class="text-gray-500 font-bold">Nenhum registo encontrado</h3>
+
+          <!-- Legenda das cores -->
+          <div class="px-4 py-3 border-t border-gray-100 dark:border-slate-800 flex flex-wrap gap-4 bg-gray-50/50 dark:bg-slate-800/20">
+            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-200 dark:bg-blue-900/60 inline-block"></span> Empeno Lateral</span>
+            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-blue-100 dark:bg-blue-900/30 inline-block"></span> Empeno Central</span>
+            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-orange-100 dark:bg-orange-900/30 inline-block"></span> Tamanho</span>
+            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-100 dark:bg-amber-900/30 inline-block"></span> Esquadro</span>
+            <span class="text-[11px] font-bold text-gray-400 flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-orange-200 dark:bg-orange-900/50 inline-block"></span> Tam2 (só retangulares ex: 45x90)</span>
+            <span class="text-[11px] text-gray-400 ml-auto">💡 Clique em qualquer campo para editar. A alteração é salva automaticamente.</span>
           </div>
         </div>
       </div>
@@ -475,6 +559,9 @@ import { collection, onSnapshot, addDoc, updateDoc, doc, query, orderBy, getDocs
 import { db } from '../firebase'
 import Sidebar from '../components/Sidebar.vue'
 import Swal from 'sweetalert2'
+import { useReferenciasStore } from '../stores/referencias'
+
+const refStore = useReferenciasStore()
 
 const DOMINIO = '@qualitron.com.br'
 
@@ -724,16 +811,27 @@ const novoFormato = async () => {
     await addDoc(collection(db, 'formatos'), {
       nome: 'NOVO FORMATO', ativo: true,
       latMin: -0.8, latMax: 0.8, centMin: -0.8, centMax: 0.8,
-      tamanhoMin: 599, tamanhoMax: 601, esquadroMin: 0, esquadroMax: 1
+      tamanhoMin: 599, tamanhoMax: 601, esquadroMin: 0, esquadroMax: 1,
+      tamanhoMin2: null, tamanhoMax2: null,
     })
+    refStore.invalidar()
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Formato criado', showConfirmButton: false, timer: 1500 })
   } catch (e) { Swal.fire('Erro', 'Não foi possível criar', 'error') }
+}
+
+// Detecta se o formato é retangular (lados diferentes), ex: 45x90, 26x106
+const isRetangular = (nome) => {
+  if (!nome) return false
+  const m = String(nome).toLowerCase().match(/^(\d+[\.,]?\d*)x(\d+[\.,]?\d*)/)
+  if (!m) return false
+  return parseFloat(m[1].replace(',', '.')) !== parseFloat(m[2].replace(',', '.'))
 }
 
 const salvar = async (f) => {
   if (f.ativo === false) return
   const { id, ...data } = f
   await updateDoc(doc(db, 'formatos', id), data)
+  refStore.invalidar()
 }
 
 const novoItem = async (colecao) => {
@@ -751,11 +849,13 @@ const arquivar = async (colecao, item) => {
     : 'Este item não aparecerá mais nas listas.'
   if (confirm(`Arquivar?\n\n${texto}`)) {
     await updateDoc(doc(db, colecao, item.id), { ativo: false })
+    if (colecao === 'formatos') refStore.invalidar()
   }
 }
 
 const restaurar = async (colecao, item) => {
   await updateDoc(doc(db, colecao, item.id), { ativo: true })
+  if (colecao === 'formatos') refStore.invalidar()
   Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Restaurado com sucesso', showConfirmButton: false, timer: 1500 })
 }
 </script>

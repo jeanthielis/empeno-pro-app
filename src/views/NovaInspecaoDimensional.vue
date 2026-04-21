@@ -197,16 +197,90 @@ const confirmarEnvio = async () => {
   const statusGeral = aprovado ? 'Aprovado' : 'Reprovado'
   const result = await Swal.fire({ title: `Lote ${statusGeral}!`, icon: aprovado ? 'success' : 'warning', showCancelButton: true, confirmButtonText: 'Gravar', confirmButtonColor: aprovado ? '#8b5cf6' : '#ef4444' })
 
-  if (result.isConfirmed) {
-    try {
-      await addDoc(collection(db, "dimensionais"), {
-        tipo: 'dimensional', ...form.value, dataHora: serverTimestamp(), resultado: statusGeral,
-        limitesSnapshot: { tamanhoMin: configAtiva.value.tamanhoMin, tamanhoMax: configAtiva.value.tamanhoMax, esquadroMin: configAtiva.value.esquadroMin, esquadroMax: configAtiva.value.esquadroMax }
-      })
-      Swal.fire('Salvo!', 'Amostragem guardada com sucesso.', 'success')
-      router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
-    } catch (e) { Swal.fire('Erro', 'Falha ao guardar os dados.', 'error') }
-  }
+  if (!result.isConfirmed) return
+
+  try {
+    const agora = new Date()
+    const lim   = configAtiva.value
+
+    await addDoc(collection(db, "dimensionais"), {
+      tipo: 'dimensional', ...form.value, dataHora: serverTimestamp(), resultado: statusGeral,
+      limitesSnapshot: { tamanhoMin: lim.tamanhoMin, tamanhoMax: lim.tamanhoMax, esquadroMin: lim.esquadroMin, esquadroMax: lim.esquadroMax }
+    })
+
+    if (navigator.vibrate) navigator.vibrate(150)
+
+    // ── Pergunta WhatsApp ──────────────────────────────────────────────────────
+    const { isConfirmed: enviaWA } = await Swal.fire({
+      title: 'Gravado com sucesso! 🎉',
+      html: 'Deseja enviar o resultado pelo <strong>WhatsApp</strong>?',
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: '<i class="ph-fill ph-whatsapp-logo"></i> Sim, enviar',
+      cancelButtonText: 'Não, obrigado',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+    })
+
+    if (enviaWA) {
+      const fmtV  = (v) => (v !== null && v !== '' && !isNaN(Number(v))) ? Number(v).toFixed(2).replace('.', ',') : '--'
+      const emEsp = (v) => validaEspessura(Number(v)) ? '🟢' : '🔴'
+      const emTE  = (v, min, max) => validaTE(v, min, max) ? '🟢' : '🔴'
+      const data  = agora.toLocaleDateString('pt-BR')
+      const hora  = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+      // extrair nome legível do email
+      const email  = auth.currentUser?.email || ''
+      const base   = email.split('@')[0].split('.')
+      const inspetor = base.length >= 2
+        ? base[0].charAt(0).toUpperCase() + base[0].slice(1) + ' ' + base[base.length-1].charAt(0).toUpperCase() + base[base.length-1].slice(1)
+        : base[0].toUpperCase()
+
+      let txt = `*RESULTADO DIMENSIONAL*\n\n`
+      txt += `*Data:* ${data} às ${hora}\n`
+      txt += `*Responsável:* ${inspetor}\n`
+      txt += `*Linha:* ${form.value.linha}\n`
+      txt += `*Produto:* ${form.value.produto}\n`
+      txt += `*Formato:* ${form.value.formatoNome}\n`
+      txt += `*Lote:* ${form.value.lote.toUpperCase()}\n`
+
+      // Espessura
+      if (form.value.pecasEspessura.length && form.value.espessuraDeclarada) {
+        txt += `\n*Espessura Declarada:* ${fmtV(form.value.espessuraDeclarada)} mm\n`
+        txt += `Range (${fmtV(espessuraMin.value)} a ${fmtV(espessuraMax.value)})\n`
+        form.value.pecasEspessura.forEach((p, idx) => {
+          const pts = p.pontos.filter(v => v !== null && v !== '')
+          if (!pts.length) return
+          const med = media(p)
+          txt += `\n*Peça ${idx + 1}*`
+          if (p.prensa)   txt += ` — Prensa ${p.prensa}`
+          if (p.cavidade) txt += ` / Cav. ${p.cavidade}`
+          txt += '\n'
+          pts.forEach((pt, pti) => {
+            txt += `${emEsp(pt)} Pt ${pti + 1}: ${fmtV(pt)}\n`
+          })
+          txt += `Média: ${emEsp(med)} *${fmtV(med)}*\n`
+        })
+      }
+
+      // Tamanho e Esquadro
+      if (form.value.medicoesTE.length && lim.tamanhoMin != null) {
+        txt += `\n*Tamanho* — Range (${fmtV(lim.tamanhoMin)} a ${fmtV(lim.tamanhoMax)})\n`
+        txt += `*Esquadro* — Range (${fmtV(lim.esquadroMin)} a ${fmtV(lim.esquadroMax)})\n`
+        form.value.medicoesTE.forEach((m, idx) => {
+          txt += `\n*Retífica ${idx + 1}*`
+          if (m.retifica) txt += ` — ${m.retifica}`
+          txt += '\n'
+          if (m.tamanho  !== null && m.tamanho  !== '') txt += `${emTE(m.tamanho, lim.tamanhoMin, lim.tamanhoMax)} Tamanho: ${fmtV(m.tamanho)}\n`
+          if (m.esquadro !== null && m.esquadro !== '') txt += `${emTE(m.esquadro, lim.esquadroMin, lim.esquadroMax)} Esquadro: ${fmtV(m.esquadro)}\n`
+        })
+      }
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+    }
+
+    router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
+  } catch (e) { Swal.fire('Erro', 'Falha ao guardar os dados.', 'error') }
 }
 </script>
 

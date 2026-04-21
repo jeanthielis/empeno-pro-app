@@ -15,45 +15,19 @@
 
       <div class="p-6 max-w-3xl mx-auto w-full space-y-5">
 
-        <!-- Cabeçalho do relatório -->
+        <!-- Equipe (sem card de informações) -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 p-5">
-          <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-            <i class="ph-fill ph-info text-indigo-500"></i> Informações do Turno
+          <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+            <i class="ph-fill ph-users text-indigo-500"></i> Equipe
           </h2>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-            <!-- Responsável (somente leitura) -->
-            <div>
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Responsável</label>
-              <div class="w-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                <i class="ph-fill ph-user-circle text-gray-400"></i>
-                {{ nomeResponsavel }}
-              </div>
-            </div>
-
-            <!-- Data/Hora (automático) -->
-            <div>
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-1.5">Data / Hora</label>
-              <div class="w-full bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-gray-600 dark:text-gray-300 flex items-center gap-2">
-                <i class="ph-fill ph-clock text-gray-400"></i>
-                {{ dataHoraAtual }}
-              </div>
-            </div>
-
-            <!-- Equipe -->
-            <div class="sm:col-span-2">
-              <label class="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Equipe</label>
-              <div class="flex gap-2">
-                <button v-for="eq in ['1','2','3','4','ADM']" :key="eq" type="button"
-                  @click="equipe = eq"
-                  class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
-                  :class="equipe === eq
-                    ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
-                    : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300'"
-                >{{ eq }}</button>
-              </div>
-            </div>
-
+          <div class="flex gap-2">
+            <button v-for="eq in ['1','2','3','4','ADM']" :key="eq" type="button"
+              @click="equipe = eq"
+              class="flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all"
+              :class="equipe === eq
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm'
+                : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300'"
+            >{{ eq }}</button>
           </div>
         </div>
 
@@ -155,6 +129,7 @@
 
                   <div class="space-y-3">
                     <input v-model="lote.lote" type="text" placeholder="Número do lote (Ex: LF37)"
+                      @input="lote.lote = lote.lote.toUpperCase()"
                       class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm font-mono font-bold text-gray-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase" />
 
                     <!-- Situação por lote -->
@@ -169,8 +144,31 @@
                       </button>
                     </div>
 
-                    <!-- Observação -->
-                    <input v-model="lote.observacao" type="text"
+                    <!-- Justificativa obrigatória para situações não-verdes -->
+                    <div v-if="lote.situacao && lote.situacao !== 'verde'" class="animate-fade-in-up">
+                      <label class="text-[11px] font-bold uppercase tracking-wider block mb-1.5 flex items-center gap-1"
+                        :class="{
+                          'text-yellow-600 dark:text-yellow-400': lote.situacao === 'amarela',
+                          'text-orange-600 dark:text-orange-400': lote.situacao === 'laranja',
+                          'text-red-600 dark:text-red-400':       lote.situacao === 'vermelha',
+                        }">
+                        <i class="ph-fill ph-warning"></i>
+                        Justificativa
+                        <span class="text-red-500">*</span>
+                      </label>
+                      <textarea v-model="lote.observacao" rows="2"
+                        :placeholder="situacoes.find(s => s.valor === lote.situacao)?.placeholder || 'Descreva o motivo...'"
+                        class="w-full bg-white dark:bg-slate-900 border-2 rounded-lg px-3 py-2 text-sm text-gray-800 dark:text-white focus:outline-none resize-none transition-all"
+                        :class="{
+                          'border-yellow-300 dark:border-yellow-700 focus:ring-2 focus:ring-yellow-400': lote.situacao === 'amarela',
+                          'border-orange-300 dark:border-orange-700 focus:ring-2 focus:ring-orange-400': lote.situacao === 'laranja',
+                          'border-red-300   dark:border-red-700   focus:ring-2 focus:ring-red-400':   lote.situacao === 'vermelha',
+                        }"
+                      />
+                    </div>
+
+                    <!-- Observação extra (opcional) — só verde -->
+                    <input v-if="lote.situacao === 'verde' || !lote.situacao" v-model="lote.observacao" type="text"
                       :placeholder="`Obs. do lote ${lote.lote || lotIdx + 1} (opcional)`"
                       class="w-full bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-gray-600 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                   </div>
@@ -201,15 +199,11 @@
           </div>
         </div>
 
-        <!-- Botões finais — compactos no mobile, em linha no desktop -->
+        <!-- Botões finais -->
         <div class="flex flex-wrap gap-2 pb-28 md:pb-8 justify-end">
           <button @click="copiarTexto"
             class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold border-2 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 hover:bg-indigo-100 transition-all text-sm">
             <i class="ph-bold ph-copy"></i> Copiar
-          </button>
-          <button @click="enviarWhatsApp"
-            class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold border-2 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/10 hover:bg-green-100 transition-all text-sm">
-            <i class="ph-fill ph-whatsapp-logo"></i> WhatsApp
           </button>
           <button @click="salvarRelatorio" :disabled="salvando || !equipe"
             class="flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-bold bg-indigo-600 hover:bg-indigo-700 text-white transition-all text-sm disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20">
@@ -256,10 +250,10 @@ const produtosFiltradosPorLinha = (texto) => {
 
 // ── Situações ─────────────────────────────────────────────────────────────────
 const situacoes = [
-  { valor: 'verde',    emoji: '🟢', label: 'Liberado Normalmente',            classAtivo: 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300' },
-  { valor: 'amarela',  emoji: '🟡', label: 'Ponto de Melhora',                classAtivo: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300' },
-  { valor: 'laranja',  emoji: '🟠', label: 'Liberado com Documento',          classAtivo: 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300' },
-  { valor: 'vermelha', emoji: '🔴', label: 'Liberado com Restrição / Retido', classAtivo: 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300' },
+  { valor: 'verde',    emoji: '🟢', label: 'Liberado Normalmente',            classAtivo: 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300', placeholder: '' },
+  { valor: 'amarela',  emoji: '🟡', label: 'Ponto de Melhora',                classAtivo: 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-300',   placeholder: 'Descreva o ponto de melhora identificado...' },
+  { valor: 'laranja',  emoji: '🟠', label: 'Liberado com Documento',          classAtivo: 'border-orange-400 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300',   placeholder: 'Informe o documento e o motivo da liberação...' },
+  { valor: 'vermelha', emoji: '🔴', label: 'Liberado com Restrição / Retido', classAtivo: 'border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300',                 placeholder: 'Descreva a restrição ou motivo da retenção...' },
 ]
 const emojiSituacao = (valor) => situacoes.find(s => s.valor === valor)?.emoji ?? ''
 
@@ -348,6 +342,16 @@ const salvarRelatorio = async () => {
     return
   }
 
+  // Validar justificativas obrigatórias
+  for (const l of linhas.value) {
+    for (const lt of l.lotes) {
+      if (lt.situacao && lt.situacao !== 'verde' && !lt.observacao?.trim()) {
+        Swal.fire('Atenção', `O lote "${lt.lote || 'sem nº'}" da linha "${l.linha || '—'}" precisa de uma justificativa.`, 'warning')
+        return
+      }
+    }
+  }
+
   const { isConfirmed } = await Swal.fire({
     title: 'Guardar relatório?',
     icon: 'question',
@@ -370,7 +374,7 @@ const salvarRelatorio = async () => {
         referencia: l.referencia,
         formato:    l.formato,
         lotes:      l.lotes.map(lt => ({
-          lote:       lt.lote,
+          lote:       lt.lote.toUpperCase(),
           situacao:   lt.situacao,
           observacao: lt.observacao,
         })),
@@ -380,8 +384,24 @@ const salvarRelatorio = async () => {
       dataHora:       serverTimestamp(),
     })
 
-  if (navigator.vibrate) navigator.vibrate(150)
-    await Swal.fire({ title: 'Guardado!', text: 'Relatório salvo com sucesso.', icon: 'success', confirmButtonColor: '#6366f1', timer: 2000, timerProgressBar: true })
+    if (navigator.vibrate) navigator.vibrate(150)
+
+    // ── Pergunta WhatsApp ──────────────────────────────────────────────────────
+    const { isConfirmed: enviaWA } = await Swal.fire({
+      title: 'Guardado com sucesso! 🎉',
+      html: 'Deseja enviar o relatório pelo <strong>WhatsApp</strong>?',
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: '<i class="ph-fill ph-whatsapp-logo"></i> Sim, enviar',
+      cancelButtonText: 'Não, obrigado',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+    })
+
+    if (enviaWA) {
+      window.open(`https://wa.me/?text=${encodeURIComponent(textoFormatado.value)}`, '_blank')
+    }
+
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {
     console.error(e)

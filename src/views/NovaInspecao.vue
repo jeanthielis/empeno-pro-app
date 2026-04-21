@@ -219,7 +219,7 @@ const enviarWhatsApp = () => {
   txt += `*Linha:* ${form.value.linha}\n`
   txt += `*Produto:* ${form.value.produto}\n`
   txt += `*Formato:* ${form.value.formatoNome}\n`
-  txt += `*Lote:* ${form.value.lote}\n`
+  txt += `*Lote:* ${form.value.lote.toUpperCase()}\n`
   txt += `\n`
   txt += `Range Lateral:(${fmtNum(cfg.latMin)} a ${fmtNum(cfg.latMax)})\n`
   txt += `Range Central:(${fmtNum(cfg.centMin)} a ${fmtNum(cfg.centMax)})\n`
@@ -359,7 +359,7 @@ const gerarPDFInspecao = (statusGeral, agora) => {
   doc.text('1 / 1', W-10, H-5.5, { align:'right' })
 
   // Salva e retorna o blob para possível uso futuro
-  const filename = `Empeno_${form.value.lote}_${data.replace(/\//g,'-')}.pdf`
+  const filename = `Empeno_${form.value.lote.toUpperCase()}_${data.replace(/\//g,'-')}.pdf`
   doc.save(filename)
 }
 
@@ -455,7 +455,7 @@ const confirmarEnvio = async () => {
       txt += `*Linha:* ${form.value.linha}\n`
       txt += `*Produto:* ${form.value.produto}\n`
       txt += `*Formato:* ${form.value.formatoNome}\n`
-      txt += `*Lote:* ${form.value.lote}\n\n`
+      txt += `*Lote:* ${form.value.lote.toUpperCase()}\n\n`
       txt += `Range Lateral:(${fmtNum(cfg.latMin)} a ${fmtNum(cfg.latMax)})\n`
       txt += `Range Central:(${fmtNum(cfg.centMin)} a ${fmtNum(cfg.centMax)})\n`
 

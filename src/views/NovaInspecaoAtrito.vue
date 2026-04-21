@@ -376,6 +376,9 @@ const confirmarEnvio = async () => {
 
   salvando.value = true
   try {
+    const agora   = new Date()
+    const medidas = form.value.medidas.filter(v => v !== null && v !== '' && !isNaN(Number(v))).map(Number)
+
     await addDoc(collection(db, 'atrito'), {
       produto:     form.value.produto,
       lote:        form.value.lote,
@@ -383,18 +386,62 @@ const confirmarEnvio = async () => {
       inspetor:    form.value.inspetor,
       classeAD:    form.value.classeAD,
       observacoes: form.value.observacoes || '',
-      medidas:     form.value.medidas.filter(v => v !== null && v !== '' && !isNaN(Number(v))).map(Number),
+      medidas,
       media:       parseFloat(mediaCalculada.value.toFixed(4)),
       resultado,
       limitesSnapshot: limiteClasse.value
         ? { classeAD: form.value.classeAD, min: limiteClasse.value.min, max: limiteClasse.value.max }
         : null,
       dataHora: serverTimestamp(),
-      data: new Date().toLocaleDateString('pt-BR'),
-      hora: new Date().toLocaleTimeString('pt-BR').slice(0, 5),
+      data: agora.toLocaleDateString('pt-BR'),
+      hora: agora.toLocaleTimeString('pt-BR').slice(0, 5),
     })
-  if (navigator.vibrate) navigator.vibrate(150)
-    await Swal.fire({ title: 'Salvo!', text: 'Medição gravada com sucesso.', icon: 'success', timer: 2000, timerProgressBar: true, confirmButtonColor: '#0d9488' })
+
+    if (navigator.vibrate) navigator.vibrate(150)
+
+    // ── Pergunta WhatsApp ──────────────────────────────────────────────────────
+    const { isConfirmed: enviaWA } = await Swal.fire({
+      title: 'Gravado com sucesso! 🎉',
+      html: 'Deseja enviar o resultado pelo <strong>WhatsApp</strong>?',
+      icon: 'success',
+      showCancelButton: true,
+      confirmButtonText: '<i class="ph-fill ph-whatsapp-logo"></i> Sim, enviar',
+      cancelButtonText: 'Não, obrigado',
+      confirmButtonColor: '#16a34a',
+      cancelButtonColor: '#6b7280',
+    })
+
+    if (enviaWA) {
+      const fmtNum = (v) => Number(v).toFixed(2).replace('.', ',')
+      const lim    = limiteClasse.value
+      const emoji  = (v) => (lim && Number(v) >= lim.min && Number(v) <= lim.max) ? '🟢' : '🔴'
+      const data   = agora.toLocaleDateString('pt-BR')
+      const hora   = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+
+      let txt = `*RESULTADO COEFICIENTE DE ATRITO*\n\n`
+      txt += `*Data:* ${data} às ${hora}\n`
+      txt += `*Responsável:* ${form.value.inspetor}\n`
+      txt += `*Linha:* ${form.value.linha}\n`
+      txt += `*Produto:* ${form.value.produto}\n`
+      txt += `*Lote:* ${form.value.lote.toUpperCase()}\n`
+      txt += `*Classe AD:* ${form.value.classeAD}\n`
+
+      if (lim) {
+        txt += `\nRange (${fmtNum(lim.min)} a ${fmtNum(lim.max)})\n`
+      }
+
+      txt += `\n*Peça 1*\n`
+      medidas.forEach(v => {
+        txt += `${emoji(v)} ${fmtNum(v)}\n`
+      })
+
+      const mediaEmoji = (lim && mediaCalculada.value >= lim.min && mediaCalculada.value <= lim.max) ? '🟢' : '🔴'
+      txt += `\n*Resultado:*\n`
+      txt += `${mediaEmoji} *${fmtNum(mediaCalculada.value)}*`
+
+      window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+    }
+
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')
   } catch (e) {
     console.error(e)

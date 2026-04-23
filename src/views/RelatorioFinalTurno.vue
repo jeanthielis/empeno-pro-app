@@ -17,9 +17,23 @@
 
         <!-- Equipe (sem card de informações) -->
         <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 p-5">
-          <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
-            <i class="ph-fill ph-users text-indigo-500"></i> Equipe
-          </h2>
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="ph-fill ph-users text-indigo-500"></i> Equipe
+            </h2>
+            <!-- Badge da equipe detectada automaticamente -->
+            <div class="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/40 rounded-lg px-3 py-1.5">
+              <i class="ph-fill ph-clock text-indigo-500 text-sm"></i>
+              <span class="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                Turno detectado: Equipe {{ infoTurno.equipe }}
+              </span>
+              <span class="text-[10px] text-gray-400 font-medium">
+                {{ infoTurno.inicio.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) }}
+                –
+                {{ infoTurno.fim.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) }}
+              </span>
+            </div>
+          </div>
           <div class="flex gap-2">
             <button v-for="eq in ['1','2','3','4','ADM']" :key="eq" type="button"
               @click="equipe = eq"
@@ -29,6 +43,10 @@
                 : 'bg-gray-50 dark:bg-slate-800 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-slate-700 hover:border-indigo-300'"
             >{{ eq }}</button>
           </div>
+          <p class="text-[11px] text-gray-400 mt-2 flex items-center gap-1">
+            <i class="ph-fill ph-info"></i>
+            Equipe detectada automaticamente pela escala 12×36. Pode alterar se necessário.
+          </p>
         </div>
 
         <!-- Linhas de produção -->
@@ -226,6 +244,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../firebase'
 import { useReferenciasStore } from '../stores/referencias'
 import Swal from 'sweetalert2'
+import { equipeAtual, infoTurnoAtual } from '../composables/useEquipe'
 import Sidebar from '../components/Sidebar.vue'
 
 const router   = useRouter()
@@ -281,7 +300,9 @@ const dataHoraAtual = computed(() =>
 )
 
 // ── Equipe ────────────────────────────────────────────────────────────────────
-const equipe = ref('')
+// Equipe pré-preenchida automaticamente pela escala 12x36, mas editável
+const equipe = ref(equipeAtual())
+const infoTurno = infoTurnoAtual()
 
 // ── Linhas e Lotes ────────────────────────────────────────────────────────────
 let _id = 0
@@ -332,7 +353,7 @@ const copiarTexto = async () => {
 const enviarWhatsApp = () => {
   const texto = encodeURIComponent(textoFormatado.value)
   // Abre o WhatsApp Web/app com o texto pré-preenchido (sem número definido — o utilizador escolhe o contato)
-  window.open(`https://wa.me/?text=${texto}`, '_blank')
+  window.location.href = `https://wa.me/?text=${texto}`
 }
 
 // ── Guardar ───────────────────────────────────────────────────────────────────
@@ -399,7 +420,7 @@ const salvarRelatorio = async () => {
     })
 
     if (enviaWA) {
-      window.open(`https://wa.me/?text=${encodeURIComponent(textoFormatado.value)}`, '_blank')
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(textoFormatado.value)}`
     }
 
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')

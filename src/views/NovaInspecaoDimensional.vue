@@ -151,6 +151,7 @@ import { db, auth } from '../firebase'
 import { useReferenciasStore } from '../stores/referencias'
 import Swal from 'sweetalert2'
 import Sidebar from '../components/Sidebar.vue'
+import { equipeAtual } from '../composables/useEquipe'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -205,6 +206,7 @@ const confirmarEnvio = async () => {
 
     await addDoc(collection(db, "dimensionais"), {
       tipo: 'dimensional', ...form.value, dataHora: serverTimestamp(), resultado: statusGeral,
+        equipe: equipeAtual(agora),
       limitesSnapshot: { tamanhoMin: lim.tamanhoMin, tamanhoMax: lim.tamanhoMax, esquadroMin: lim.esquadroMin, esquadroMax: lim.esquadroMax }
     })
 
@@ -239,6 +241,7 @@ const confirmarEnvio = async () => {
       let txt = `*RESULTADO DIMENSIONAL*\n\n`
       txt += `*Data:* ${data} às ${hora}\n`
       txt += `*Responsável:* ${inspetor}\n`
+      txt += `*Equipe:* ${equipeAtual(agora)}\n`
       txt += `*Linha:* ${form.value.linha}\n`
       txt += `*Produto:* ${form.value.produto}\n`
       txt += `*Formato:* ${form.value.formatoNome}\n`
@@ -276,7 +279,7 @@ const confirmarEnvio = async () => {
         })
       }
 
-      window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`
     }
 
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')

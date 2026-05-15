@@ -1,3 +1,15 @@
+// Aplica sinal do atrito para exportação
+const aplicarSinalExport = (valor, lim) => {
+  if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return true
+  const v = Number(valor), ref = Number(lim.valor)
+  if (lim.operador === '>=') return v >= ref
+  if (lim.operador === '<=') return v <= ref
+  if (lim.operador === '>')  return v >  ref
+  if (lim.operador === '<')  return v <  ref
+  if (lim.operador === '==') return v === ref
+  return true
+}
+
 import * as XLSX from 'xlsx'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -99,7 +111,7 @@ const excelAtrito = (lista) => {
       'Inspetor': a.inspetor ?? '', 'Linha': a.linha ?? '',
       'Produto': a.produto ?? '', 'Lote': a.lote ?? '',
       'Média': fmtV(a.media, 3),
-      'Limite Mín': lim.min ?? '', 'Limite Máx': lim.max ?? '',
+      'Sinal': lim.operador ? `${lim.operador} ${lim.valor}` : '', 
     }
     ;(a.medidas || []).forEach((m, idx) => {
       rows.push({ ...base, 'Medida Nº': idx + 1, 'Valor': fmtV(m, 3) })
@@ -431,7 +443,7 @@ const pdfAtrito = (doc, lista, startY) => {
     const lim    = a.limitesSnapshot || {}
     const medidas = a.medidas || []
     const medidasStr = medidas.map((m, i) =>
-      `${i+1}:${fmtV(m,3)}${foraRange(m, lim.min, lim.max) ? '*' : ''}`
+      `${i+1}:${fmtV(m,3)}${!aplicarSinalExport(m, lim) ? '*' : ''}`
     ).join('  ')
     const ri = body.length
     body.push([
@@ -439,8 +451,8 @@ const pdfAtrito = (doc, lista, startY) => {
       a.classeAD??'', a.inspetor??'', a.linha??'', a.produto??'', a.lote??'',
       lim.min??'', lim.max??'', fmtV(a.media,3), medidas.length, medidasStr
     ])
-    if (lim.min != null && foraRange(a.media, lim.min, lim.max)) cores.push({ri, ci:10})
-    if (medidas.some(m => foraRange(m, lim.min, lim.max)))        cores.push({ri, ci:12})
+    if (lim.min != null && !aplicarSinalExport(a.media, lim)) cores.push({ri, ci:10})
+    if (medidas.some(m => !aplicarSinalExport(m, lim)))        cores.push({ri, ci:12})
   })
 
   autoTable(doc, {

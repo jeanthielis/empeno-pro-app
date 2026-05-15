@@ -145,14 +145,74 @@
 
                   <!-- Ação -->
                   <td class="px-3 py-2 text-center">
-                    <button v-if="fmt.ativo !== false" @click="arquivar('formatos', fmt)"
-                      class="p-1.5 rounded-lg text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors" title="Arquivar">
-                      <i class="ph-bold ph-archive text-base"></i>
-                    </button>
-                    <button v-else @click="restaurar('formatos', fmt)"
-                      class="p-1.5 rounded-lg text-emerald-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 transition-colors" title="Restaurar">
-                      <i class="ph-bold ph-arrow-counter-clockwise text-base"></i>
-                    </button>
+                    <div class="flex items-center justify-center gap-1">
+                      <button @click="toggleCalibre(fmt.id)"
+                        class="p-1.5 rounded-lg text-violet-500 hover:text-violet-700 bg-violet-50 hover:bg-violet-100 dark:bg-violet-900/20 transition-colors" title="Calibres">
+                        <i class="ph-bold ph-circles-three-plus text-base"></i>
+                      </button>
+                      <button v-if="fmt.ativo !== false" @click="arquivar('formatos', fmt)"
+                        class="p-1.5 rounded-lg text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 transition-colors" title="Arquivar">
+                        <i class="ph-bold ph-archive text-base"></i>
+                      </button>
+                      <button v-else @click="restaurar('formatos', fmt)"
+                        class="p-1.5 rounded-lg text-emerald-500 hover:text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 transition-colors" title="Restaurar">
+                        <i class="ph-bold ph-arrow-counter-clockwise text-base"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Sub-linha de calibres -->
+                <tr v-if="calibreExpandido === fmt.id" :key="'cal-'+fmt.id">
+                  <td colspan="13" class="px-4 pb-4 pt-1 bg-violet-50/30 dark:bg-violet-900/5">
+                    <div class="border border-violet-200 dark:border-violet-800/40 rounded-xl overflow-hidden">
+                      <!-- Header calibres -->
+                      <div class="flex items-center justify-between px-4 py-2.5 bg-violet-100/60 dark:bg-violet-900/20 border-b border-violet-200 dark:border-violet-800/30">
+                        <span class="text-xs font-bold text-violet-700 dark:text-violet-300 flex items-center gap-1.5">
+                          <i class="ph-fill ph-circles-three-plus"></i> Calibres — {{ fmt.nome }}
+                        </span>
+                        <button @click="novoCalibre(fmt)" class="flex items-center gap-1.5 text-xs font-bold text-violet-600 hover:text-violet-800 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg border border-violet-200 dark:border-violet-700 transition-all">
+                          <i class="ph-bold ph-plus"></i> Novo Calibre
+                        </button>
+                      </div>
+
+                      <!-- Tabela de calibres -->
+                      <table class="w-full text-xs">
+                        <thead class="bg-white/50 dark:bg-slate-900/50 border-b border-violet-100 dark:border-violet-900/30">
+                          <tr>
+                            <th class="px-4 py-2 text-left font-bold text-gray-500 uppercase tracking-wider">Nº Calibre</th>
+                            <th class="px-4 py-2 text-left font-bold text-gray-500 uppercase tracking-wider">Descrição</th>
+                            <th class="px-4 py-2 text-center font-bold text-orange-500 uppercase tracking-wider">Tamanho Padrão (mm)</th>
+                            <th class="px-4 py-2 text-center font-bold text-gray-500 uppercase tracking-wider">Ação</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-violet-50 dark:divide-violet-900/20">
+                          <tr v-if="calibresPorFormato(fmt.id).length === 0">
+                            <td colspan="4" class="px-4 py-6 text-center text-gray-400 italic">Nenhum calibre cadastrado. Clique em "Novo Calibre" para adicionar.</td>
+                          </tr>
+                          <tr v-for="cal in calibresPorFormato(fmt.id)" :key="cal.id" class="hover:bg-violet-50/50 dark:hover:bg-violet-900/5">
+                            <td class="px-4 py-2">
+                              <input v-model="cal.numero" @change="salvarCalibre(cal)" type="text"
+                                class="w-20 text-center py-1 px-2 bg-violet-50 dark:bg-violet-900/20 border border-violet-200 dark:border-violet-800/30 rounded-lg outline-none focus:border-violet-500 font-black text-violet-700 dark:text-violet-300 text-sm" />
+                            </td>
+                            <td class="px-4 py-2">
+                              <input v-model="cal.descricao" @change="salvarCalibre(cal)" type="text" placeholder="Ex: Premium, Exportação..."
+                                class="w-full py-1 px-2 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg outline-none focus:border-violet-500 text-gray-700 dark:text-gray-300" />
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                              <input v-model.number="cal.tamanhoPadrao" @change="salvarCalibre(cal)" type="number" step="0.01"
+                                class="w-28 text-center py-1 px-2 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/30 rounded-lg outline-none focus:border-orange-500 font-black text-orange-700 dark:text-orange-300 text-sm" />
+                            </td>
+                            <td class="px-4 py-2 text-center">
+                              <button @click="excluirCalibre(cal)"
+                                class="p-1 rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="Excluir">
+                                <i class="ph-bold ph-trash text-sm"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </td>
                 </tr>
 
@@ -380,8 +440,8 @@
             <!-- Linha de cabeçalho -->
             <div class="grid grid-cols-12 gap-3 px-1">
               <div class="col-span-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Classe</div>
-              <div class="col-span-4 text-[10px] font-bold text-red-400 uppercase tracking-wider text-center">Mínimo</div>
-              <div class="col-span-4 text-[10px] font-bold text-emerald-500 uppercase tracking-wider text-center">Máximo</div>
+              <div class="col-span-5 text-[10px] font-bold text-teal-500 uppercase tracking-wider text-center">Sinal (operador)</div>
+              <div class="col-span-3 text-[10px] font-bold text-teal-500 uppercase tracking-wider text-center">Valor</div>
               <div class="col-span-1"></div>
             </div>
 
@@ -394,39 +454,42 @@
             >
               <!-- Nome da classe -->
               <div class="col-span-3 flex items-center gap-2">
-                <span class="font-black text-sm px-2.5 py-1 rounded-lg"
-                  :class="corClasse(classe.nome)"
-                >{{ classe.nome }}</span>
+                <span class="font-black text-sm px-2.5 py-1 rounded-lg" :class="corClasse(classe.nome)">{{ classe.nome }}</span>
               </div>
 
-              <!-- Mínimo -->
-              <div class="col-span-4">
+              <!-- Operador -->
+              <div class="col-span-5">
+                <select
+                  v-model="classe.operador"
+                  @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                  class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800/50 rounded-lg px-2 py-2 text-sm font-black text-teal-700 dark:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                >
+                  <option value="" disabled>Selecionar...</option>
+                  <option value=">=">>= (maior ou igual)</option>
+                  <option value="<=">&lt;= (menor ou igual)</option>
+                  <option value=">">> (maior que)</option>
+                  <option value="<">&lt; (menor que)</option>
+                  <option value="==">=  (igual a)</option>
+                </select>
+              </div>
+
+              <!-- Valor -->
+              <div class="col-span-3">
                 <input
                   type="number" step="0.001"
-                  v-model.number="classe.min"
-                  @focus="classeEditando = classe.nome"
-                  @blur="classeEditando = ''"
-                  class="w-full text-center bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800/50 rounded-lg px-2 py-2 text-sm font-bold text-red-700 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-400"
+                  v-model.number="classe.valor"
+                  @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                  class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800/50 rounded-lg px-2 py-2 text-sm font-bold text-teal-700 dark:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
                   placeholder="0.000"
                 />
               </div>
 
-              <!-- Máximo -->
-              <div class="col-span-4">
-                <input
-                  type="number" step="0.001"
-                  v-model.number="classe.max"
-                  @focus="classeEditando = classe.nome"
-                  @blur="classeEditando = ''"
-                  class="w-full text-center bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/50 rounded-lg px-2 py-2 text-sm font-bold text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
-                  placeholder="0.000"
-                />
-              </div>
-
-              <!-- Status de preenchimento -->
+              <!-- Preview do sinal -->
               <div class="col-span-1 flex justify-center">
-                <i v-if="classe.min !== null && classe.max !== null && classe.min < classe.max"
-                  class="ph-fill ph-check-circle text-emerald-500 text-xl"></i>
+                <span v-if="classe.operador && classe.valor !== null"
+                  class="text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                  {{ classe.operador }} {{ classe.valor }}
+                </span>
                 <i v-else class="ph-fill ph-circle text-gray-300 dark:text-slate-600 text-xl"></i>
               </div>
             </div>
@@ -555,13 +618,54 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { collection, onSnapshot, addDoc, updateDoc, doc, query, orderBy, getDocs, where, setDoc, limit } from 'firebase/firestore'
+import { collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, query, orderBy, getDocs, where, setDoc, limit } from 'firebase/firestore'
 import { db } from '../firebase'
 import Sidebar from '../components/Sidebar.vue'
 import Swal from 'sweetalert2'
 import { useReferenciasStore } from '../stores/referencias'
 
 const refStore = useReferenciasStore()
+
+// ── Calibres ──────────────────────────────────────────────────────────────────
+const calibreExpandido = ref(null)
+const calibresLocal    = ref([]) // cache local para edição inline
+
+const toggleCalibre = async (formatoId) => {
+  if (calibreExpandido.value === formatoId) { calibreExpandido.value = null; return }
+  calibreExpandido.value = formatoId
+  // Carregar calibres do formato
+  const snap = await getDocs(query(collection(db, 'calibres'), where('formatoId', '==', formatoId), orderBy('numero', 'desc')))
+  const existentes = calibresLocal.value.map(c => c.id)
+  snap.docs.forEach(d => {
+    const data = { id: d.id, ...d.data() }
+    if (!existentes.includes(d.id)) calibresLocal.value.push(data)
+  })
+}
+
+const calibresPorFormato = (formatoId) =>
+  calibresLocal.value.filter(c => c.formatoId === formatoId).sort((a, b) => Number(b.numero) - Number(a.numero))
+
+const novoCalibre = async (fmt) => {
+  const docRef = await addDoc(collection(db, 'calibres'), {
+    formatoId: fmt.id, formatoNome: fmt.nome,
+    numero: '', descricao: '', tamanhoPadrao: 0, ativo: true,
+  })
+  calibresLocal.value.push({ id: docRef.id, formatoId: fmt.id, formatoNome: fmt.nome, numero: '', descricao: '', tamanhoPadrao: 0, ativo: true })
+  refStore.invalidar()
+}
+
+const salvarCalibre = async (cal) => {
+  const { id, ...data } = cal
+  await updateDoc(doc(db, 'calibres', id), data)
+  refStore.invalidar()
+}
+
+const excluirCalibre = async (cal) => {
+  if (!confirm(`Excluir Calibre ${cal.numero}?`)) return
+  await deleteDoc(doc(db, 'calibres', cal.id))
+  calibresLocal.value = calibresLocal.value.filter(c => c.id !== cal.id)
+  refStore.invalidar()
+}
 
 const DOMINIO = '@qualitron.com.br'
 
@@ -720,8 +824,8 @@ const salvandoAtrito   = ref(false)
 const classeEditando   = ref('')
 let   configAtritoId   = null
 
-// Array reativo com min/max de cada classe
-const classesAD = ref(NOMES_CLASSES.map(nome => ({ nome, min: null, max: null })))
+// Array reativo com operador/valor de cada classe
+const classesAD = ref(NOMES_CLASSES.map(nome => ({ nome, operador: '>=', valor: null })))
 
 const corClasse = (nome) => {
   const mapa = {
@@ -743,29 +847,25 @@ const carregarConfigAtrito = async () => {
     const classes = d.data().classes || {}
     classesAD.value = NOMES_CLASSES.map(nome => ({
       nome,
-      min: classes[nome]?.min ?? null,
-      max: classes[nome]?.max ?? null,
+      operador: classes[nome]?.operador ?? '>=',
+      valor:    classes[nome]?.valor    ?? null,
     }))
   }
   carregandoAtrito.value = false
 }
 
 const salvarConfigAtrito = async () => {
-  // Valida: para classes preenchidas, min deve ser < max
   for (const c of classesAD.value) {
-    if (c.min !== null && c.max !== null && Number(c.min) >= Number(c.max)) {
-      Swal.fire('Atenção', `Classe ${c.nome}: o valor mínimo deve ser menor que o máximo.`, 'warning')
+    if (!c.operador || c.valor === null || c.valor === '') {
+      Swal.fire('Atenção', `Classe ${c.nome}: preencha o sinal e o valor.`, 'warning')
       return
     }
   }
   salvandoAtrito.value = true
   try {
-    // Monta objeto { AD: { min, max }, AD2: { min, max }, ... }
     const classes = {}
     classesAD.value.forEach(c => {
-      if (c.min !== null && c.max !== null) {
-        classes[c.nome] = { min: Number(c.min), max: Number(c.max) }
-      }
+      classes[c.nome] = { operador: c.operador, valor: Number(c.valor) }
     })
     const dados = { tipo: 'atrito', classes }
     if (configAtritoId) {
@@ -774,6 +874,7 @@ const salvarConfigAtrito = async () => {
       const novo = await addDoc(collection(db, 'configuracoes'), dados)
       configAtritoId = novo.id
     }
+    refStore.invalidar()
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Classes AD guardadas!', showConfirmButton: false, timer: 2000 })
   } catch (e) {
     console.error(e)

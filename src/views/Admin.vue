@@ -437,70 +437,92 @@
           </div>
 
           <div v-else class="space-y-3">
-            <!-- Linha de cabeçalho -->
-            <div class="grid grid-cols-12 gap-3 px-1">
-              <div class="col-span-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Classe</div>
-              <div class="col-span-5 text-[10px] font-bold text-teal-500 uppercase tracking-wider text-center">Sinal (operador)</div>
-              <div class="col-span-3 text-[10px] font-bold text-teal-500 uppercase tracking-wider text-center">Valor</div>
-              <div class="col-span-1"></div>
-            </div>
 
             <!-- Uma linha por classe -->
             <div v-for="classe in classesAD" :key="classe.nome"
-              class="grid grid-cols-12 gap-3 items-center p-3 rounded-xl border transition-all"
+              class="p-4 rounded-xl border-2 transition-all space-y-3"
               :class="classeEditando === classe.nome
-                ? 'border-teal-300 dark:border-teal-700 bg-teal-50/50 dark:bg-teal-900/10'
-                : 'border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/20 hover:border-gray-200 dark:hover:border-slate-700'"
+                ? 'border-teal-400 dark:border-teal-600 bg-teal-50/60 dark:bg-teal-900/10'
+                : 'border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-800/20'"
             >
-              <!-- Nome da classe -->
-              <div class="col-span-3 flex items-center gap-2">
-                <span class="font-black text-sm px-2.5 py-1 rounded-lg" :class="corClasse(classe.nome)">{{ classe.nome }}</span>
-              </div>
+              <!-- Cabeçalho da classe: nome + toggle de tipo -->
+              <div class="flex items-center justify-between">
+                <span class="font-black text-sm px-3 py-1.5 rounded-lg" :class="corClasse(classe.nome)">{{ classe.nome }}</span>
 
-              <!-- Operador -->
-              <div class="col-span-5">
-                <select
-                  v-model="classe.operador"
-                  @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
-                  class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800/50 rounded-lg px-2 py-2 text-sm font-black text-teal-700 dark:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                >
-                  <option value="" disabled>Selecionar...</option>
-                  <option value=">=">>= (maior ou igual)</option>
-                  <option value="<=">&lt;= (menor ou igual)</option>
-                  <option value=">">> (maior que)</option>
-                  <option value="<">&lt; (menor que)</option>
-                  <option value="==">=  (igual a)</option>
-                </select>
-              </div>
+                <!-- Toggle Sinal / Range -->
+                <div class="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5">
+                  <button type="button" @click="classe.tipo = 'sinal'"
+                    class="px-3 py-1.5 rounded-md text-xs font-bold transition-all"
+                    :class="classe.tipo === 'sinal'
+                      ? 'bg-white dark:bg-slate-700 text-teal-600 dark:text-teal-400 shadow-sm'
+                      : 'text-gray-400 hover:text-gray-600'">
+                    <i class="ph-bold ph-greater-than-or-equal"></i> Sinal único
+                  </button>
+                  <button type="button" @click="classe.tipo = 'range'"
+                    class="px-3 py-1.5 rounded-md text-xs font-bold transition-all"
+                    :class="classe.tipo === 'range'
+                      ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                      : 'text-gray-400 hover:text-gray-600'">
+                    <i class="ph-bold ph-arrows-horizontal"></i> Range (mín–máx)
+                  </button>
+                </div>
 
-              <!-- Valor -->
-              <div class="col-span-3">
-                <input
-                  type="number" step="0.001"
-                  v-model.number="classe.valor"
-                  @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
-                  class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-800/50 rounded-lg px-2 py-2 text-sm font-bold text-teal-700 dark:text-teal-400 focus:outline-none focus:ring-2 focus:ring-teal-400"
-                  placeholder="0.000"
-                />
-              </div>
-
-              <!-- Preview do sinal -->
-              <div class="col-span-1 flex justify-center">
-                <span v-if="classe.operador && classe.valor !== null"
-                  class="text-[10px] font-black text-teal-600 dark:text-teal-400 bg-teal-50 dark:bg-teal-900/20 px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                  {{ classe.operador }} {{ classe.valor }}
+                <!-- Preview -->
+                <span class="text-xs font-black px-2.5 py-1 rounded-lg"
+                  :class="previewValido(classe)
+                    ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800/40'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-400'">
+                  {{ previewClasse(classe) }}
                 </span>
-                <i v-else class="ph-fill ph-circle text-gray-300 dark:text-slate-600 text-xl"></i>
+              </div>
+
+              <!-- Campos: Sinal único -->
+              <div v-if="classe.tipo === 'sinal'" class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Operador</label>
+                  <select v-model="classe.operador"
+                    @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                    class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-700 rounded-lg px-2 py-2 text-sm font-black text-teal-700 dark:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-400">
+                    <option value="" disabled>Selecionar...</option>
+                    <option value=">=">>= (maior ou igual)</option>
+                    <option value="<=">&lt;= (menor ou igual)</option>
+                    <option value=">">> (maior que)</option>
+                    <option value="<">&lt; (menor que)</option>
+                    <option value="==">=  (igual a)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Valor de referência</label>
+                  <input type="number" step="0.001" v-model.number="classe.valor"
+                    @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                    class="w-full text-center bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-700 rounded-lg px-2 py-2 text-sm font-bold text-teal-700 dark:text-teal-300 focus:outline-none focus:ring-2 focus:ring-teal-400"
+                    placeholder="0.000" />
+                </div>
+              </div>
+
+              <!-- Campos: Range min–max -->
+              <div v-else class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="text-[10px] font-bold text-red-400 uppercase block mb-1">Mínimo</label>
+                  <input type="number" step="0.001" v-model.number="classe.min"
+                    @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                    class="w-full text-center bg-white dark:bg-slate-900 border border-red-200 dark:border-red-800/50 rounded-lg px-2 py-2 text-sm font-bold text-red-600 dark:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-400"
+                    placeholder="0.000" />
+                </div>
+                <div>
+                  <label class="text-[10px] font-bold text-emerald-500 uppercase block mb-1">Máximo</label>
+                  <input type="number" step="0.001" v-model.number="classe.max"
+                    @focus="classeEditando = classe.nome" @blur="classeEditando = ''"
+                    class="w-full text-center bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/50 rounded-lg px-2 py-2 text-sm font-bold text-emerald-700 dark:text-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    placeholder="0.000" />
+                </div>
               </div>
             </div>
 
             <!-- Botão guardar -->
             <div class="pt-2">
-              <button
-                @click="salvarConfigAtrito"
-                :disabled="salvandoAtrito"
-                class="w-full py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
+              <button @click="salvarConfigAtrito" :disabled="salvandoAtrito"
+                class="w-full py-3 rounded-xl font-bold text-white bg-teal-600 hover:bg-teal-700 transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed">
                 <i v-if="salvandoAtrito" class="ph-bold ph-spinner animate-spin"></i>
                 <i v-else class="ph-bold ph-floppy-disk"></i>
                 {{ salvandoAtrito ? 'A guardar...' : 'Guardar Todas as Classes' }}
@@ -824,8 +846,10 @@ const salvandoAtrito   = ref(false)
 const classeEditando   = ref('')
 let   configAtritoId   = null
 
-// Array reativo com operador/valor de cada classe
-const classesAD = ref(NOMES_CLASSES.map(nome => ({ nome, operador: '>=', valor: null })))
+// Array reativo — cada classe tem tipo ('sinal' | 'range') + campos correspondentes
+const classesAD = ref(NOMES_CLASSES.map(nome => ({
+  nome, tipo: 'sinal', operador: '>=', valor: null, min: null, max: null
+})))
 
 const corClasse = (nome) => {
   const mapa = {
@@ -838,6 +862,21 @@ const corClasse = (nome) => {
   return mapa[nome] || 'bg-gray-100 text-gray-700'
 }
 
+// Preview legível da configuração de cada classe
+const previewClasse = (c) => {
+  if (c.tipo === 'sinal') {
+    if (!c.operador || c.valor === null) return '—'
+    return `${c.operador} ${Number(c.valor).toFixed(3)}`
+  }
+  if (c.min === null || c.max === null) return '—'
+  return `${Number(c.min).toFixed(3)} a ${Number(c.max).toFixed(3)}`
+}
+
+const previewValido = (c) => {
+  if (c.tipo === 'sinal') return c.operador && c.valor !== null
+  return c.min !== null && c.max !== null && Number(c.min) < Number(c.max)
+}
+
 const carregarConfigAtrito = async () => {
   carregandoAtrito.value = true
   const snap = await getDocs(query(collection(db, 'configuracoes'), where('tipo', '==', 'atrito'), limit(1)))
@@ -845,27 +884,43 @@ const carregarConfigAtrito = async () => {
     const d = snap.docs[0]
     configAtritoId = d.id
     const classes = d.data().classes || {}
-    classesAD.value = NOMES_CLASSES.map(nome => ({
-      nome,
-      operador: classes[nome]?.operador ?? '>=',
-      valor:    classes[nome]?.valor    ?? null,
-    }))
+    classesAD.value = NOMES_CLASSES.map(nome => {
+      const cfg = classes[nome] ?? {}
+      // Detectar tipo salvo: se tem operador → sinal, se tem min/max → range
+      const tipo = cfg.tipo ?? (cfg.min !== undefined ? 'range' : 'sinal')
+      return {
+        nome, tipo,
+        operador: cfg.operador ?? '>=',
+        valor:    cfg.valor    ?? null,
+        min:      cfg.min      ?? null,
+        max:      cfg.max      ?? null,
+      }
+    })
   }
   carregandoAtrito.value = false
 }
 
 const salvarConfigAtrito = async () => {
   for (const c of classesAD.value) {
-    if (!c.operador || c.valor === null || c.valor === '') {
-      Swal.fire('Atenção', `Classe ${c.nome}: preencha o sinal e o valor.`, 'warning')
-      return
+    if (c.tipo === 'sinal' && (!c.operador || c.valor === null)) {
+      Swal.fire('Atenção', `Classe ${c.nome}: preencha o operador e o valor.`, 'warning'); return
+    }
+    if (c.tipo === 'range' && (c.min === null || c.max === null)) {
+      Swal.fire('Atenção', `Classe ${c.nome}: preencha o mínimo e o máximo.`, 'warning'); return
+    }
+    if (c.tipo === 'range' && Number(c.min) >= Number(c.max)) {
+      Swal.fire('Atenção', `Classe ${c.nome}: o mínimo deve ser menor que o máximo.`, 'warning'); return
     }
   }
   salvandoAtrito.value = true
   try {
     const classes = {}
     classesAD.value.forEach(c => {
-      classes[c.nome] = { operador: c.operador, valor: Number(c.valor) }
+      if (c.tipo === 'sinal') {
+        classes[c.nome] = { tipo: 'sinal', operador: c.operador, valor: Number(c.valor) }
+      } else {
+        classes[c.nome] = { tipo: 'range', min: Number(c.min), max: Number(c.max) }
+      }
     })
     const dados = { tipo: 'atrito', classes }
     if (configAtritoId) {

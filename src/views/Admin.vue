@@ -427,8 +427,8 @@
               <i class="ph-fill ph-wave-sine text-teal-600 dark:text-teal-400 text-xl"></i>
             </div>
             <div>
-              <h3 class="font-bold text-gray-800 dark:text-white">Classes AD — Ranges de Coeficiente de Atrito</h3>
-              <p class="text-xs text-gray-400 mt-0.5">Configure o Mín e Máx de cada classe. O inspetor selecionará a classe na hora da medição.</p>
+              <h3 class="font-bold text-gray-800 dark:text-white">Classes AD — Sinal de Coeficiente de Atrito</h3>
+              <p class="text-xs text-gray-400 mt-0.5">Configure o sinal (operador) e o valor de referência de cada classe. Ex: AD4 → >= 0,40</p>
             </div>
           </div>
 

@@ -16,8 +16,8 @@
             <span class="text-xs font-black px-3 py-1.5 rounded-lg border" :class="corClasse(form.classeAD)">
               <i class="ph-fill ph-wave-sine mr-1"></i>{{ form.classeAD }}
             </span>
-            <div v-if="limiteClasse" class="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 font-bold">
-              Range: {{ limiteClasse.min }} — {{ limiteClasse.max }}
+            <div v-if="limiteClasse" class="text-xs bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 px-3 py-1.5 rounded-lg border border-teal-200 dark:border-teal-800/40 font-black flex items-center gap-1.5">
+              <i class="ph-fill ph-equals text-sm"></i> {{ form.classeAD }}: {{ sinalFormatado }}
             </div>
             <button @click="passo = 1" class="text-xs font-bold text-teal-600 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800">
               <i class="ph-bold ph-pencil-simple"></i> Editar
@@ -93,7 +93,7 @@
               </p>
               <div v-else-if="limiteClasse" class="mt-2 text-xs bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/30 px-3 py-2 rounded-lg text-teal-700 dark:text-teal-400 font-bold flex items-center gap-2">
                 <i class="ph-fill ph-check-circle"></i>
-                Range da {{ form.classeAD }}: {{ limiteClasse.min }} a {{ limiteClasse.max }}
+                Sinal {{ form.classeAD }}: {{ sinalFormatado }}
               </div>
               <div v-else-if="form.classeAD && !carregandoLimites" class="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 px-3 py-2 rounded-lg text-yellow-700 dark:text-yellow-400 font-bold flex items-center gap-2">
                 <i class="ph-fill ph-warning"></i> Classe sem range configurado. Configure no Admin.
@@ -189,17 +189,23 @@
           </div>
 
           <!-- Barra de range -->
+          <!-- Indicador de sinal -->
           <div v-if="limiteClasse && mediaCalculada !== null" class="mt-5">
-            <div class="relative h-3 bg-gray-100 dark:bg-slate-800 rounded-full overflow-visible">
-              <div class="absolute h-full bg-emerald-200 dark:bg-emerald-900/40 rounded-full" :style="barraRangeStyle"></div>
-              <div class="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md transition-all"
-                :class="statusMedia === 'aprovado' ? 'bg-emerald-500' : 'bg-red-500'"
-                :style="barraIndicadorStyle"
-              ></div>
-            </div>
-            <div class="flex justify-between text-[10px] text-gray-400 font-bold mt-1.5">
-              <span>{{ limiteClasse.min }}</span>
-              <span>{{ limiteClasse.max }}</span>
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-slate-800 rounded-xl p-4 border"
+              :class="statusMedia === 'aprovado' ? 'border-emerald-200 dark:border-emerald-800/40' : 'border-red-200 dark:border-red-800/40'">
+              <div>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Condição</p>
+                <p class="font-black text-lg text-gray-700 dark:text-gray-200">{{ sinalFormatado }}</p>
+              </div>
+              <div class="text-center">
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Média obtida</p>
+                <p class="font-black text-2xl" :class="statusMedia === 'aprovado' ? 'text-emerald-600' : 'text-red-600'">
+                  {{ mediaCalculada.toFixed(3).replace('.', ',') }}
+                </p>
+              </div>
+              <div>
+                <i class="text-4xl" :class="statusMedia === 'aprovado' ? 'ph-fill ph-check-circle text-emerald-500' : 'ph-fill ph-x-circle text-red-500'"></i>
+              </div>
             </div>
           </div>
         </div>
@@ -237,6 +243,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
 import { db, auth } from '../firebase'
 import Swal from 'sweetalert2'
 import Sidebar from '../components/Sidebar.vue'
+import { equipeAtual } from '../composables/useEquipe'
 
 const router   = useRouter()
 const authStore = useAuthStore()
@@ -301,6 +308,25 @@ const limiteClasse = computed(() => {
   return configClasses.value[form.value.classeAD] ?? null
 })
 
+// Sinal formatado para exibição: ">= 0,40"
+const sinalFormatado = computed(() => {
+  const lim = limiteClasse.value
+  if (!lim || lim.valor == null) return ''
+  return `${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}`
+})
+
+// Aplica o operador configurado
+const aplicarSinal = (valor, lim) => {
+  if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return null // pendente
+  const v = Number(valor), ref = Number(lim.valor)
+  if (lim.operador === '>=') return v >= ref
+  if (lim.operador === '<=') return v <= ref
+  if (lim.operador === '>')  return v >  ref
+  if (lim.operador === '<')  return v <  ref
+  if (lim.operador === '==') return v === ref
+  return true
+}
+
 // ── Medidas dinâmicas ─────────────────────────────────────────────────────────
 const adicionarMedida = () => form.value.medidas.push(null)
 const removerMedida   = (idx) => { if (form.value.medidas.length > 1) form.value.medidas.splice(idx, 1) }
@@ -318,24 +344,28 @@ const mediaCalculada = computed(() => {
 
 const statusMedia = computed(() => {
   if (mediaCalculada.value === null || !limiteClasse.value) return 'pendente'
-  return mediaCalculada.value >= limiteClasse.value.min && mediaCalculada.value <= limiteClasse.value.max
-    ? 'aprovado' : 'reprovado'
+  const ok = aplicarSinal(mediaCalculada.value, limiteClasse.value)
+  return ok === null ? 'pendente' : ok ? 'aprovado' : 'reprovado'
 })
 
 const statusMedida = (idx) => {
   const v = form.value.medidas[idx]
-  if (v === null || v === '' || isNaN(Number(v))) return 'pendente'
   if (!limiteClasse.value) return 'pendente'
-  return Number(v) >= limiteClasse.value.min && Number(v) <= limiteClasse.value.max ? 'aprovado' : 'reprovado'
+  const ok = aplicarSinal(v, limiteClasse.value)
+  return ok === null ? 'pendente' : ok ? 'aprovado' : 'reprovado'
 }
 
-// ── Barra visual ──────────────────────────────────────────────────────────────
+// ── Barra visual (adaptada para sinal único) ──────────────────────────────────
 const barraRangeStyle = computed(() => {
-  if (!limiteClasse.value) return {}
-  const { min, max } = limiteClasse.value
-  const total = max - min, margin = total * 0.3
-  const vizMin = min - margin, vizTotal = (max + margin) - vizMin
-  return { left: `${((min - vizMin) / vizTotal) * 100}%`, width: `${(total / vizTotal) * 100}%` }
+  if (!limiteClasse.value || limiteClasse.value.valor == null) return {}
+  const ref = Number(limiteClasse.value.valor)
+  const op  = limiteClasse.value.operador
+  // Para >= e >: barra começa no ref e vai até a direita
+  // Para <= e <: barra começa na esquerda e termina no ref
+  // Para ==: barra estreita centrada no ref
+  if (op === '>=' || op === '>') return { left: '50%', width: '50%' }
+  if (op === '<=' || op === '<') return { left: '0%',  width: '50%' }
+  return { left: '45%', width: '10%' }
 })
 const barraIndicadorStyle = computed(() => {
   if (!limiteClasse.value || mediaCalculada.value === null) return {}
@@ -390,11 +420,12 @@ const confirmarEnvio = async () => {
       media:       parseFloat(mediaCalculada.value.toFixed(4)),
       resultado,
       limitesSnapshot: limiteClasse.value
-        ? { classeAD: form.value.classeAD, min: limiteClasse.value.min, max: limiteClasse.value.max }
+        ? { classeAD: form.value.classeAD, operador: limiteClasse.value.operador, valor: limiteClasse.value.valor }
         : null,
       dataHora: serverTimestamp(),
       data: agora.toLocaleDateString('pt-BR'),
       hora: agora.toLocaleTimeString('pt-BR').slice(0, 5),
+      equipe: equipeAtual(agora),
     })
 
     if (navigator.vibrate) navigator.vibrate(150)
@@ -421,13 +452,14 @@ const confirmarEnvio = async () => {
       let txt = `*RESULTADO COEFICIENTE DE ATRITO*\n\n`
       txt += `*Data:* ${data} às ${hora}\n`
       txt += `*Responsável:* ${form.value.inspetor}\n`
+      txt += `*Equipe:* ${equipeAtual(agora)}\n`
       txt += `*Linha:* ${form.value.linha}\n`
       txt += `*Produto:* ${form.value.produto}\n`
       txt += `*Lote:* ${form.value.lote.toUpperCase()}\n`
       txt += `*Classe AD:* ${form.value.classeAD}\n`
 
       if (lim) {
-        txt += `\nRange (${fmtNum(lim.min)} a ${fmtNum(lim.max)})\n`
+        txt += `\nSinal: ${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}\n`
       }
 
       txt += `\n*Peça 1*\n`
@@ -439,7 +471,7 @@ const confirmarEnvio = async () => {
       txt += `\n*Resultado:*\n`
       txt += `${mediaEmoji} *${fmtNum(mediaCalculada.value)}*`
 
-      window.open(`https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`, '_blank')
+      window.location.href = `https://wa.me/?text=${encodeURIComponent(txt.trimEnd())}`
     }
 
     router.push(authStore.userProfile === 'inspetor' ? '/home' : '/dashboard')

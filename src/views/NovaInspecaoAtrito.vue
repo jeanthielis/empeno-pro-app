@@ -315,10 +315,15 @@ const sinalFormatado = computed(() => {
   return `${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}`
 })
 
-// Aplica o operador configurado
+// Aplica a regra configurada — suporta sinal único e range
 const aplicarSinal = (valor, lim) => {
-  if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return null // pendente
-  const v = Number(valor), ref = Number(lim.valor)
+  if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return null
+  const v = Number(valor)
+  if (lim.tipo === 'range') {
+    return v >= Number(lim.min) && v <= Number(lim.max)
+  }
+  // sinal único
+  const ref = Number(lim.valor)
   if (lim.operador === '>=') return v >= ref
   if (lim.operador === '<=') return v <= ref
   if (lim.operador === '>')  return v >  ref
@@ -327,7 +332,14 @@ const aplicarSinal = (valor, lim) => {
   return true
 }
 
-// ── Medidas dinâmicas ─────────────────────────────────────────────────────────
+const sinalFormatado = computed(() => {
+  const lim = limiteClasse.value
+  if (!lim) return ''
+  if (lim.tipo === 'range') {
+    return `${Number(lim.min).toFixed(3).replace('.', ',')} a ${Number(lim.max).toFixed(3).replace('.', ',')}`
+  }
+  return `${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}`
+})
 const adicionarMedida = () => form.value.medidas.push(null)
 const removerMedida   = (idx) => { if (form.value.medidas.length > 1) form.value.medidas.splice(idx, 1) }
 
@@ -355,14 +367,12 @@ const statusMedida = (idx) => {
   return ok === null ? 'pendente' : ok ? 'aprovado' : 'reprovado'
 }
 
-// ── Barra visual (adaptada para sinal único) ──────────────────────────────────
+// ── Barra visual (adaptada para sinal único e range) ──────────────────────────
 const barraRangeStyle = computed(() => {
-  if (!limiteClasse.value || limiteClasse.value.valor == null) return {}
-  const ref = Number(limiteClasse.value.valor)
-  const op  = limiteClasse.value.operador
-  // Para >= e >: barra começa no ref e vai até a direita
-  // Para <= e <: barra começa na esquerda e termina no ref
-  // Para ==: barra estreita centrada no ref
+  const lim = limiteClasse.value
+  if (!lim) return {}
+  if (lim.tipo === 'range') return { left: '20%', width: '60%' }
+  const op = lim.operador
   if (op === '>=' || op === '>') return { left: '50%', width: '50%' }
   if (op === '<=' || op === '<') return { left: '0%',  width: '50%' }
   return { left: '45%', width: '10%' }
@@ -420,7 +430,7 @@ const confirmarEnvio = async () => {
       media:       parseFloat(mediaCalculada.value.toFixed(4)),
       resultado,
       limitesSnapshot: limiteClasse.value
-        ? { classeAD: form.value.classeAD, operador: limiteClasse.value.operador, valor: limiteClasse.value.valor }
+        ? { classeAD: form.value.classeAD, ...limiteClasse.value }
         : null,
       dataHora: serverTimestamp(),
       data: agora.toLocaleDateString('pt-BR'),
@@ -459,7 +469,10 @@ const confirmarEnvio = async () => {
       txt += `*Classe AD:* ${form.value.classeAD}\n`
 
       if (lim) {
-        txt += `\nSinal: ${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}\n`
+        const regra = lim.tipo === 'range'
+          ? `Range (${fmtNum(lim.min)} a ${fmtNum(lim.max)})`
+          : `Sinal: ${lim.operador} ${fmtNum(lim.valor)}`
+        txt += `\n${regra}\n`
       }
 
       txt += `\n*Peça 1*\n`

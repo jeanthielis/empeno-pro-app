@@ -1,7 +1,28 @@
-// Aplica sinal do atrito para exportação
-const aplicarSinalExport = (valor, lim) => {
+// ── Limite do atrito (exportação): suporta sinal único, range e formato legado ─
+const normLimiteAtritoExport = (snap) => {
+  if (!snap) return null
+  if (snap.operador != null && snap.valor != null && snap.tipo !== 'range') {
+    return { tipo: 'sinal', operador: snap.operador, valor: Number(snap.valor) }
+  }
+  const min = snap.min ?? snap.atritoMin, max = snap.max ?? snap.atritoMax
+  if (min != null && max != null) return { tipo: 'range', min: Number(min), max: Number(max) }
+  return null
+}
+
+const limiteAtritoTxtExport = (snap) => {
+  const lim = normLimiteAtritoExport(snap)
+  if (!lim) return ''
+  if (lim.tipo === 'range') return `${lim.min.toFixed(3)} a ${lim.max.toFixed(3)}`
+  return `${lim.operador} ${lim.valor.toFixed(3)}`
+}
+
+// Aplica a regra do atrito para exportação (sinal único ou range)
+const aplicarSinalExport = (valor, snap) => {
+  const lim = normLimiteAtritoExport(snap)
   if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return true
-  const v = Number(valor), ref = Number(lim.valor)
+  const v = Number(valor)
+  if (lim.tipo === 'range') return v >= lim.min && v <= lim.max
+  const ref = lim.valor
   if (lim.operador === '>=') return v >= ref
   if (lim.operador === '<=') return v <= ref
   if (lim.operador === '>')  return v >  ref
@@ -111,7 +132,7 @@ const excelAtrito = (lista) => {
       'Inspetor': a.inspetor ?? '', 'Linha': a.linha ?? '',
       'Produto': a.produto ?? '', 'Lote': a.lote ?? '',
       'Média': fmtV(a.media, 3),
-      'Sinal': lim.operador ? `${lim.operador} ${lim.valor}` : '', 
+      'Limite': limiteAtritoTxtExport(lim),
     }
     ;(a.medidas || []).forEach((m, idx) => {
       rows.push({ ...base, 'Medida Nº': idx + 1, 'Valor': fmtV(m, 3) })
@@ -435,7 +456,7 @@ const pdfDimensional = (doc, lista, startY) => {
 // ── PDF Atrito ─────────────────────────────────────────────────────────────────
 const pdfAtrito = (doc, lista, startY) => {
   // Atrito: uma linha por inspeção (a média + valores resumidos) — sem repetição
-  const head = [['Data', 'Hora', 'Resultado', 'Classe AD', 'Inspetor', 'Linha', 'Produto', 'Lote', 'Mín', 'Máx', 'Média', 'Nº Med.', 'Valores (nº:val, *=fora)']]
+  const head = [['Data', 'Hora', 'Resultado', 'Classe AD', 'Inspetor', 'Linha', 'Produto', 'Lote', 'Limite', 'Média', 'Nº Med.', 'Valores (nº:val, *=fora)']]
   const body = []
   const cores = []
 
@@ -449,20 +470,20 @@ const pdfAtrito = (doc, lista, startY) => {
     body.push([
       fmtData(a.dataHora), fmtHora(a.dataHora), a.resultado??'',
       a.classeAD??'', a.inspetor??'', a.linha??'', a.produto??'', a.lote??'',
-      lim.min??'', lim.max??'', fmtV(a.media,3), medidas.length, medidasStr
+      limiteAtritoTxtExport(lim), fmtV(a.media,3), medidas.length, medidasStr
     ])
-    if (lim.min != null && !aplicarSinalExport(a.media, lim)) cores.push({ri, ci:10})
-    if (medidas.some(m => !aplicarSinalExport(m, lim)))        cores.push({ri, ci:12})
+    if (normLimiteAtritoExport(lim) && !aplicarSinalExport(a.media, lim)) cores.push({ri, ci:9})
+    if (medidas.some(m => !aplicarSinalExport(m, lim)))                   cores.push({ri, ci:11})
   })
 
   autoTable(doc, {
     ...baseTableStyles, startY, head, body,
     columnStyles: {
       2:{halign:'center'}, 3:{halign:'center'},
-      8:{halign:'center'}, 9:{halign:'center'},
-      10:{halign:'center', fontStyle:'bold'},
-      11:{halign:'center'},
-      12:{cellWidth:65}
+      8:{halign:'center'},
+      9:{halign:'center', fontStyle:'bold'},
+      10:{halign:'center'},
+      11:{cellWidth:65}
     },
     didParseCell(data) {
       if (data.section !== 'body') return

@@ -17,7 +17,7 @@
               <i class="ph-fill ph-wave-sine mr-1"></i>{{ form.classeAD }}
             </span>
             <div v-if="limiteClasse" class="text-xs bg-gray-100 dark:bg-slate-800 text-gray-500 dark:text-gray-400 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-slate-700 font-bold">
-              Range: {{ limiteClasse.min }} — {{ limiteClasse.max }}
+              Limite: {{ sinalFormatado }}
             </div>
             <button @click="passo = 1" class="text-xs font-bold text-teal-600 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800">
               <i class="ph-bold ph-pencil-simple"></i> Editar
@@ -93,10 +93,10 @@
               </p>
               <div v-else-if="limiteClasse" class="mt-2 text-xs bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/30 px-3 py-2 rounded-lg text-teal-700 dark:text-teal-400 font-bold flex items-center gap-2">
                 <i class="ph-fill ph-check-circle"></i>
-                Range da {{ form.classeAD }}: {{ limiteClasse.min }} a {{ limiteClasse.max }}
+                Limite {{ form.classeAD }}: {{ sinalFormatado }}
               </div>
               <div v-else-if="form.classeAD && !carregandoLimites" class="mt-2 text-xs bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-800/30 px-3 py-2 rounded-lg text-yellow-700 dark:text-yellow-400 font-bold flex items-center gap-2">
-                <i class="ph-fill ph-warning"></i> Classe sem range configurado. Configure no Admin.
+                <i class="ph-fill ph-warning"></i> Classe sem limite configurado. Configure no Admin.
               </div>
             </div>
 
@@ -197,9 +197,12 @@
                 :style="barraIndicadorStyle"
               ></div>
             </div>
-            <div class="flex justify-between text-[10px] text-gray-400 font-bold mt-1.5">
+            <div v-if="limiteClasse.min !== undefined && limiteClasse.min !== null" class="flex justify-between text-[10px] text-gray-400 font-bold mt-1.5">
               <span>{{ limiteClasse.min }}</span>
               <span>{{ limiteClasse.max }}</span>
+            </div>
+            <div v-else class="text-center text-[10px] text-gray-400 font-bold mt-1.5">
+              Condição: {{ sinalFormatado }}
             </div>
           </div>
         </div>
@@ -302,6 +305,35 @@ const limiteClasse = computed(() => {
   return configClasses.value[form.value.classeAD] ?? null
 })
 
+// A configuração é range? (compatível com configs antigas sem o campo "tipo")
+const ehRange = (lim) => !!lim && (lim.tipo === 'range' || (lim.tipo == null && lim.min !== undefined))
+
+// Aplica a regra configurada — suporta sinal único e range
+const aplicarSinal = (valor, lim) => {
+  if (!lim || valor === null || valor === '' || isNaN(Number(valor))) return null
+  const v = Number(valor)
+  if (ehRange(lim)) {
+    return v >= Number(lim.min) && v <= Number(lim.max)
+  }
+  const ref = Number(lim.valor)
+  if (lim.operador === '>=') return v >= ref
+  if (lim.operador === '<=') return v <= ref
+  if (lim.operador === '>')  return v >  ref
+  if (lim.operador === '<')  return v <  ref
+  if (lim.operador === '==') return v === ref
+  return true
+}
+
+// Texto legível do limite: ">= 0,400" ou "0,380 a 0,420"
+const sinalFormatado = computed(() => {
+  const lim = limiteClasse.value
+  if (!lim) return ''
+  if (ehRange(lim)) {
+    return `${Number(lim.min).toFixed(3).replace('.', ',')} a ${Number(lim.max).toFixed(3).replace('.', ',')}`
+  }
+  return `${lim.operador} ${Number(lim.valor).toFixed(3).replace('.', ',')}`
+})
+
 // ── Medidas dinâmicas ─────────────────────────────────────────────────────────
 const adicionarMedida = () => form.value.medidas.push(null)
 const removerMedida   = (idx) => { if (form.value.medidas.length > 1) form.value.medidas.splice(idx, 1) }
@@ -319,31 +351,50 @@ const mediaCalculada = computed(() => {
 
 const statusMedia = computed(() => {
   if (mediaCalculada.value === null || !limiteClasse.value) return 'pendente'
-  return mediaCalculada.value >= limiteClasse.value.min && mediaCalculada.value <= limiteClasse.value.max
-    ? 'aprovado' : 'reprovado'
+  const ok = aplicarSinal(mediaCalculada.value, limiteClasse.value)
+  return ok === null ? 'pendente' : ok ? 'aprovado' : 'reprovado'
 })
 
 const statusMedida = (idx) => {
   const v = form.value.medidas[idx]
-  if (v === null || v === '' || isNaN(Number(v))) return 'pendente'
   if (!limiteClasse.value) return 'pendente'
-  return Number(v) >= limiteClasse.value.min && Number(v) <= limiteClasse.value.max ? 'aprovado' : 'reprovado'
+  const ok = aplicarSinal(v, limiteClasse.value)
+  return ok === null ? 'pendente' : ok ? 'aprovado' : 'reprovado'
 }
 
-// ── Barra visual ──────────────────────────────────────────────────────────────
+// ── Barra visual (sinal único e range) ────────────────────────────────────────
+// Janela de visualização: range → min/max com margem; sinal → valor centrado
+const janelaViz = () => {
+  const lim = limiteClasse.value
+  if (!lim) return null
+  if (ehRange(lim)) {
+    const min = Number(lim.min), max = Number(lim.max)
+    const total = (max - min) || 1, margin = total * 0.3
+    return { vizMin: min - margin, vizTotal: total + margin * 2 }
+  }
+  const v = Number(lim.valor)
+  const span = Math.max(Math.abs(v) * 0.5, 0.05)
+  return { vizMin: v - span, vizTotal: span * 2 }
+}
 const barraRangeStyle = computed(() => {
-  if (!limiteClasse.value) return {}
-  const { min, max } = limiteClasse.value
-  const total = max - min, margin = total * 0.3
-  const vizMin = min - margin, vizTotal = (max + margin) - vizMin
-  return { left: `${((min - vizMin) / vizTotal) * 100}%`, width: `${(total / vizTotal) * 100}%` }
+  const lim = limiteClasse.value
+  if (!lim) return {}
+  if (ehRange(lim)) {
+    const jz = janelaViz()
+    const min = Number(lim.min), max = Number(lim.max)
+    return { left: `${((min - jz.vizMin) / jz.vizTotal) * 100}%`, width: `${((max - min) / jz.vizTotal) * 100}%` }
+  }
+  // Sinal único: valor de referência fica no centro (50%)
+  const op = lim.operador
+  if (op === '>=' || op === '>') return { left: '50%', width: '50%' }
+  if (op === '<=' || op === '<') return { left: '0%',  width: '50%' }
+  return { left: '48%', width: '4%' } // ==
 })
 const barraIndicadorStyle = computed(() => {
   if (!limiteClasse.value || mediaCalculada.value === null) return {}
-  const { min, max } = limiteClasse.value
-  const total = max - min, margin = total * 0.3
-  const vizMin = min - margin, vizTotal = (max + margin) - vizMin
-  const pos = Math.min(Math.max(((mediaCalculada.value - vizMin) / vizTotal) * 100, 0), 100)
+  const jz = janelaViz()
+  if (!jz) return {}
+  const pos = Math.min(Math.max(((mediaCalculada.value - jz.vizMin) / jz.vizTotal) * 100, 0), 100)
   return { left: `${pos}%` }
 })
 
@@ -391,7 +442,7 @@ const confirmarEnvio = async () => {
       media:       parseFloat(mediaCalculada.value.toFixed(4)),
       resultado,
       limitesSnapshot: limiteClasse.value
-        ? { classeAD: form.value.classeAD, min: limiteClasse.value.min, max: limiteClasse.value.max }
+        ? { classeAD: form.value.classeAD, ...limiteClasse.value }
         : null,
       dataHora: serverTimestamp(),
       data: agora.toLocaleDateString('pt-BR'),
@@ -416,7 +467,7 @@ const confirmarEnvio = async () => {
     if (enviaWA) {
       const fmtNum = (v) => Number(v).toFixed(2).replace('.', ',')
       const lim    = limiteClasse.value
-      const emoji  = (v) => (lim && Number(v) >= lim.min && Number(v) <= lim.max) ? '🟢' : '🔴'
+      const emoji  = (v) => aplicarSinal(v, lim) ? '🟢' : '🔴'
       const data   = agora.toLocaleDateString('pt-BR')
       const hora   = agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 
@@ -430,7 +481,10 @@ const confirmarEnvio = async () => {
       txt += `*Classe AD:* ${form.value.classeAD}\n`
 
       if (lim) {
-        txt += `\nRange (${fmtNum(lim.min)} a ${fmtNum(lim.max)})\n`
+        const regra = ehRange(lim)
+          ? `Range (${fmtNum(lim.min)} a ${fmtNum(lim.max)})`
+          : `Limite: ${lim.operador} ${fmtNum(lim.valor)}`
+        txt += `\n${regra}\n`
       }
 
       txt += `\n*Peça 1*\n`
@@ -438,7 +492,7 @@ const confirmarEnvio = async () => {
         txt += `${emoji(v)} ${fmtNum(v)}\n`
       })
 
-      const mediaEmoji = (lim && mediaCalculada.value >= lim.min && mediaCalculada.value <= lim.max) ? '🟢' : '🔴'
+      const mediaEmoji = aplicarSinal(mediaCalculada.value, lim) ? '🟢' : '🔴'
       txt += `\n*Resultado:*\n`
       txt += `${mediaEmoji} *${fmtNum(mediaCalculada.value)}*`
 

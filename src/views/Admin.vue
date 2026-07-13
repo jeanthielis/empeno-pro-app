@@ -68,7 +68,8 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-100 dark:divide-slate-800">
-                <tr v-for="fmt in formatosFiltrados" :key="fmt.id"
+                <template v-for="fmt in formatosFiltrados" :key="fmt.id">
+                <tr
                   class="transition-colors hover:bg-gray-50/50 dark:hover:bg-slate-800/30"
                   :class="fmt.ativo === false ? 'opacity-50' : ''">
 
@@ -163,7 +164,7 @@
                 </tr>
 
                 <!-- Sub-linha de calibres -->
-                <tr v-if="calibreExpandido === fmt.id" :key="'cal-'+fmt.id">
+                <tr v-if="calibreExpandido === fmt.id">
                   <td colspan="13" class="px-4 pb-4 pt-1 bg-violet-50/30 dark:bg-violet-900/5">
                     <div class="border border-violet-200 dark:border-violet-800/40 rounded-xl overflow-hidden">
                       <!-- Header calibres -->
@@ -215,6 +216,7 @@
                     </div>
                   </td>
                 </tr>
+                </template>
 
                 <!-- Linha vazia -->
                 <tr v-if="formatosFiltrados.length === 0">

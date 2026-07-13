@@ -862,16 +862,9 @@
             </div>
 
             <!-- Limites usados -->
-            <div v-if="atritoSelecionado.limitesSnapshot" class="bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/30 p-4 rounded-xl flex justify-around">
-              <div class="text-center">
-                <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Limite Mínimo</span>
-                <span class="font-bold text-teal-700 dark:text-teal-400 text-lg">{{ atritoSelecionado.limitesSnapshot.atritoMin }}</span>
-              </div>
-              <div class="w-px bg-teal-200 dark:bg-teal-800/50"></div>
-              <div class="text-center">
-                <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Limite Máximo</span>
-                <span class="font-bold text-teal-700 dark:text-teal-400 text-lg">{{ atritoSelecionado.limitesSnapshot.atritoMax }}</span>
-              </div>
+            <div v-if="atritoSelecionado.limitesSnapshot" class="bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-800/30 p-4 rounded-xl text-center">
+              <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Limite Aplicado ({{ atritoSelecionado.limitesSnapshot.classeAD || atritoSelecionado.classeAD }})</span>
+              <span class="font-bold text-teal-700 dark:text-teal-400 text-lg">{{ limiteAtritoTexto(atritoSelecionado.limitesSnapshot) }}</span>
             </div>
 
             <!-- As 3 medidas + média -->
@@ -879,19 +872,19 @@
               <h3 class="text-sm font-bold text-gray-500 uppercase tracking-wider mb-3">Medidas Inseridas</h3>
               <div class="grid grid-cols-3 gap-3 mb-4">
                 <div v-for="(m, idx) in atritoSelecionado.medidas" :key="idx" class="text-center border-2 rounded-xl p-3"
-                  :class="atritoSelecionado.limitesSnapshot && m !== null
-                    ? (m >= atritoSelecionado.limitesSnapshot.atritoMin && m <= atritoSelecionado.limitesSnapshot.atritoMax)
+                  :class="avaliarLimiteAtrito(m, atritoSelecionado.limitesSnapshot) === null
+                    ? 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50'
+                    : avaliarLimiteAtrito(m, atritoSelecionado.limitesSnapshot)
                       ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-900/10'
-                      : 'border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10'
-                    : 'border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-800/50'"
+                      : 'border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/10'"
                 >
                   <span class="text-[10px] font-bold text-gray-400 uppercase block mb-1">Medida {{ idx + 1 }}</span>
                   <span class="text-xl font-black"
-                    :class="atritoSelecionado.limitesSnapshot && m !== null
-                      ? (m >= atritoSelecionado.limitesSnapshot.atritoMin && m <= atritoSelecionado.limitesSnapshot.atritoMax)
+                    :class="avaliarLimiteAtrito(m, atritoSelecionado.limitesSnapshot) === null
+                      ? 'text-gray-700 dark:text-gray-300'
+                      : avaliarLimiteAtrito(m, atritoSelecionado.limitesSnapshot)
                         ? 'text-emerald-700 dark:text-emerald-400'
-                        : 'text-red-700 dark:text-red-400'
-                      : 'text-gray-700 dark:text-gray-300'"
+                        : 'text-red-700 dark:text-red-400'"
                   >{{ m?.toFixed(3) ?? '—' }}</span>
                 </div>
               </div>
@@ -1679,6 +1672,40 @@ const copiarRelatorio = async (rel) => {
 // ─── Coleção Atrito ───────────────────────────────────────────────────────────
 const modalAtritoAberto = ref(false)
 const atritoSelecionado = ref(null)
+
+// Normaliza o snapshot de limites: suporta sinal, range e formato legado (atritoMin/atritoMax)
+const normalizarLimiteAtrito = (snap) => {
+  if (!snap) return null
+  if (snap.operador != null && snap.valor != null && snap.tipo !== 'range') {
+    return { tipo: 'sinal', operador: snap.operador, valor: Number(snap.valor) }
+  }
+  const min = snap.min ?? snap.atritoMin
+  const max = snap.max ?? snap.atritoMax
+  if (min != null && max != null) return { tipo: 'range', min: Number(min), max: Number(max) }
+  return null
+}
+
+// Texto legível do limite: ">= 0,400" ou "0,380 a 0,420"
+const limiteAtritoTexto = (snap) => {
+  const lim = normalizarLimiteAtrito(snap)
+  if (!lim) return '—'
+  if (lim.tipo === 'range') return `${lim.min.toFixed(3)} a ${lim.max.toFixed(3)}`
+  return `${lim.operador} ${lim.valor.toFixed(3)}`
+}
+
+// true = aprovado, false = reprovado, null = sem limite/valor
+const avaliarLimiteAtrito = (valor, snap) => {
+  const lim = normalizarLimiteAtrito(snap)
+  if (!lim || valor === null || valor === undefined || isNaN(Number(valor))) return null
+  const v = Number(valor)
+  if (lim.tipo === 'range') return v >= lim.min && v <= lim.max
+  if (lim.operador === '>=') return v >= lim.valor
+  if (lim.operador === '<=') return v <= lim.valor
+  if (lim.operador === '>')  return v >  lim.valor
+  if (lim.operador === '<')  return v <  lim.valor
+  if (lim.operador === '==') return v === lim.valor
+  return null
+}
 
 const abrirDetalhesAtrito = (at) => {
   atritoSelecionado.value = at

@@ -29,6 +29,11 @@
           <span v-else>Entrar no Sistema</span>
         </button>
       </form>
+
+      <!-- Versão da aplicação -->
+      <p class="text-center text-[10px] font-bold text-gray-300 dark:text-slate-600 tracking-wider mt-6 select-none" :title="'Build: ' + buildDate">
+        v{{ appVersion }} — {{ buildDate }}
+      </p>
     </div>
   </div>
 </template>
@@ -40,6 +45,10 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { collection, query, where, getDocs } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import Swal from 'sweetalert2'
+
+// ── Versionamento (injetado pelo Vite no build) ───────────────────────────────
+const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
+const buildDate  = typeof __BUILD_DATE__  !== 'undefined' ? __BUILD_DATE__  : '—'
 
 const router = useRouter()
 

@@ -357,13 +357,13 @@
                 <p class="font-black text-teal-700 dark:text-teal-300 text-xl">{{ modalItem.classeAD }}</p>
               </div>
               <div v-if="modalItem.limitesSnapshot" class="bg-gray-50 dark:bg-slate-800 rounded-xl p-3 border border-gray-200 dark:border-slate-700">
-                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Range</p>
-                <p class="font-black text-gray-700 dark:text-gray-300">{{ fmtV(modalItem.limitesSnapshot.min) }} a {{ fmtV(modalItem.limitesSnapshot.max) }}</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase mb-1">Limite</p>
+                <p class="font-black text-gray-700 dark:text-gray-300">{{ limiteAtritoTxt(modalItem.limitesSnapshot) }}</p>
               </div>
               <div v-if="modalItem.limitesSnapshot" class="rounded-xl p-3 border"
-                :class="foraRange(modalItem.media, modalItem.limitesSnapshot.min, modalItem.limitesSnapshot.max) ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30' : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30'">
-                <p class="text-[10px] font-bold uppercase mb-1" :class="foraRange(modalItem.media, modalItem.limitesSnapshot.min, modalItem.limitesSnapshot.max) ? 'text-red-500' : 'text-emerald-500'">Média</p>
-                <p class="font-black text-xl" :class="foraRange(modalItem.media, modalItem.limitesSnapshot.min, modalItem.limitesSnapshot.max) ? 'text-red-600' : 'text-emerald-600'">{{ modalItem.media?.toFixed(3) }}</p>
+                :class="foraLimiteAtrito(modalItem.media, modalItem.limitesSnapshot) ? 'bg-red-50 dark:bg-red-900/10 border-red-200 dark:border-red-800/30' : 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800/30'">
+                <p class="text-[10px] font-bold uppercase mb-1" :class="foraLimiteAtrito(modalItem.media, modalItem.limitesSnapshot) ? 'text-red-500' : 'text-emerald-500'">Média</p>
+                <p class="font-black text-xl" :class="foraLimiteAtrito(modalItem.media, modalItem.limitesSnapshot) ? 'text-red-600' : 'text-emerald-600'">{{ modalItem.media?.toFixed(3) }}</p>
               </div>
             </div>
             <div class="border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden">
@@ -372,7 +372,7 @@
                 <div v-for="(m,mi) in (modalItem.medidas||[])" :key="mi" class="text-center min-w-[52px]">
                   <p class="text-[10px] text-gray-400 font-bold mb-1">{{ mi+1 }}</p>
                   <span class="text-sm font-black px-2 py-1 rounded-lg block"
-                    :class="modalItem.limitesSnapshot && foraRange(m, modalItem.limitesSnapshot.min, modalItem.limitesSnapshot.max) ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'">
+                    :class="modalItem.limitesSnapshot && foraLimiteAtrito(m, modalItem.limitesSnapshot) ? 'text-red-600 bg-red-50 dark:bg-red-900/20' : 'text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20'">
                     {{ Number(m).toFixed(3) }}
                   </span>
                 </div>
@@ -441,6 +441,32 @@ const fmtData = (d) => toDate(d?.dataHora)?.toLocaleDateString('pt-BR') ?? d?.da
 const fmtHora = (d) => toDate(d?.dataHora)?.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'}) ?? d?.hora ?? '--'
 const fmtV    = (v) => (v!==null&&v!==undefined&&v!==''&&!isNaN(Number(v))) ? Number(v).toFixed(2) : '--'
 const foraRange = (v,min,max) => v!==null&&v!==undefined&&!isNaN(Number(v))&&(Number(v)<min||Number(v)>max)
+
+// ── Limite de atrito: suporta sinal único, range e formato legado ─────────────
+const normLimiteAtrito = (snap) => {
+  if(!snap) return null
+  if(snap.operador!=null && snap.valor!=null && snap.tipo!=='range') return { tipo:'sinal', operador:snap.operador, valor:Number(snap.valor) }
+  const min = snap.min ?? snap.atritoMin, max = snap.max ?? snap.atritoMax
+  if(min!=null && max!=null) return { tipo:'range', min:Number(min), max:Number(max) }
+  return null
+}
+const limiteAtritoTxt = (snap) => {
+  const lim = normLimiteAtrito(snap)
+  if(!lim) return '—'
+  return lim.tipo==='range' ? `${fmtV(lim.min)} a ${fmtV(lim.max)}` : `${lim.operador} ${fmtV(lim.valor)}`
+}
+const foraLimiteAtrito = (v, snap) => {
+  const lim = normLimiteAtrito(snap)
+  if(!lim || v===null || v===undefined || isNaN(Number(v))) return false
+  const n = Number(v)
+  if(lim.tipo==='range') return n<lim.min || n>lim.max
+  if(lim.operador==='>=') return !(n>=lim.valor)
+  if(lim.operador==='<=') return !(n<=lim.valor)
+  if(lim.operador==='>')  return !(n> lim.valor)
+  if(lim.operador==='<')  return !(n< lim.valor)
+  if(lim.operador==='==') return n!==lim.valor
+  return false
+}
 const valoresLaterais = (i) => { const v=[]; (i.pecas||[]).forEach(p=>{const l=p.laterais||{};[l.A,l.B,l.C,l.D].forEach(x=>{if(x!==null&&x!==undefined&&x!==''&&!isNaN(Number(x)))v.push(Number(x))})}); return v }
 const valoresCentrais = (i) => { const v=[]; (i.pecas||[]).forEach(p=>{const c=p.centrais||{};[c['1'],c['2']].forEach(x=>{if(x!==null&&x!==undefined&&x!==''&&!isNaN(Number(x)))v.push(Number(x))})}); return v }
 const minMax = (vals) => vals.length ? { min: Math.min(...vals), max: Math.max(...vals) } : null
@@ -530,7 +556,7 @@ const enviarEmail = () => {
   let c=`RELATÓRIO GERAL DE NÃO CONFORMIDADES\n${"=".repeat(50)}\nPeríodo: ${ini} a ${fim}\nTotal NC: ${totalNCs.value} (Empeno: ${ncEmpeno.value.length} | Dimensional: ${ncDimensional.value.length} | Atrito: ${ncAtrito.value.length} | Documento: ${ncTurnoDocumento.value.length} | Restrição: ${ncTurnoRestricao.value.length})\nGerado em: ${new Date().toLocaleString('pt-BR')}\n\n`
   if(ncEmpeno.value.length){c+=`${"=".repeat(50)}\nEMPENO REPROVADO (${ncEmpeno.value.length})\n${"=".repeat(50)}\n`;ncEmpeno.value.forEach((i,x)=>{const lim=i.limitesSnapshot||{};const mmL=minMax(valoresLaterais(i));const mmC=minMax(valoresCentrais(i));const flag=(v,t)=>{if(v===null||v===undefined)return'';const[mn,mx]=t==='lat'?[lim.latMin,lim.latMax]:[lim.centMin,lim.centMax];return(mn!==undefined&&foraRange(v,mn,mx))?'  *** FORA DO RANGE ***':''};c+=`\n[${x+1}] ${fmtData(i)} ${fmtHora(i)}\n    Linha: ${i.linha||'—'} | Produto: ${i.produto||'—'} | Lote: ${(i.lote||'—').toUpperCase()}\n    Formato: ${i.formatoNome||'—'}\n`;if(lim.latMin!==undefined)c+=`    Range Lateral: ${fmtV(lim.latMin)} a ${fmtV(lim.latMax)}\n`;if(lim.centMin!==undefined)c+=`    Range Central: ${fmtV(lim.centMin)} a ${fmtV(lim.centMax)}\n`;if(mmL)c+=`    Lateral Menor: ${fmtV(mmL.min)}${flag(mmL.min,'lat')}\n    Lateral Maior: ${fmtV(mmL.max)}${flag(mmL.max,'lat')}\n`;if(mmC)c+=`    Central Menor: ${fmtV(mmC.min)}${flag(mmC.min,'cent')}\n    Central Maior: ${fmtV(mmC.max)}${flag(mmC.max,'cent')}\n`;c+=`    Tratativa: ${i.tratativa||'PENDENTE'}\n`});c+='\n'}
   if(ncDimensional.value.length){c+=`${"=".repeat(50)}\nDIMENSIONAL REPROVADO (${ncDimensional.value.length})\n${"=".repeat(50)}\n`;ncDimensional.value.forEach((d,x)=>{const lim=d.limitesSnapshot||{};const eMin=d.espessuraDeclarada?d.espessuraDeclarada*0.95:null;c+=`\n[${x+1}] ${fmtData(d)} ${fmtHora(d)}\n    Linha: ${d.linha||'—'} | Produto: ${d.produto||'—'} | Lote: ${(d.lote||'—').toUpperCase()}\n`;if(d.espessuraDeclarada)c+=`    Esp. Declarada: ${fmtV(d.espessuraDeclarada)} mm (tol. ${fmtV(eMin)} a ${fmtV(d.espessuraDeclarada*1.05)})\n`;const ef=[];(d.pecasEspessura||[]).forEach((p,pi)=>{(p.pontos||[]).forEach((pt,pti)=>{if(pt!==null&&pt!==''&&eMin!==null&&foraRange(Number(pt),eMin,d.espessuraDeclarada*1.05))ef.push(`P${pi+1}/Pt${pti+1}:${fmtV(pt)}`)})});if(ef.length)c+=`    Espessura FORA: ${ef.join(' | ')}  *** FORA DO RANGE ***\n`;const tf=[];const esf=[];(d.medicoesTE||[]).forEach((m,mi)=>{if(m.tamanho!==null&&lim.tamanhoMin!==undefined&&foraRange(Number(m.tamanho),lim.tamanhoMin,lim.tamanhoMax))tf.push(`R${mi+1}:${fmtV(m.tamanho)}`);if(m.esquadro!==null&&lim.esquadroMin!==undefined&&foraRange(Number(m.esquadro),lim.esquadroMin,lim.esquadroMax))esf.push(`R${mi+1}:${fmtV(m.esquadro)}`)});if(tf.length)c+=`    Tamanho FORA: ${tf.join(' | ')}  *** FORA DO RANGE ***\n`;if(esf.length)c+=`    Esquadro FORA: ${esf.join(' | ')}  *** FORA DO RANGE ***\n`});c+='\n'}
-  if(ncAtrito.value.length){c+=`${"=".repeat(50)}\nATRITO REPROVADO (${ncAtrito.value.length})\n${"=".repeat(50)}\n`;ncAtrito.value.forEach((a,x)=>{const lim=a.limitesSnapshot||{};c+=`\n[${x+1}] ${fmtData(a)} ${fmtHora(a)}\n    Linha: ${a.linha||'—'} | Produto: ${a.produto||'—'} | Lote: ${(a.lote||'—').toUpperCase()}\n    Classe AD: ${a.classeAD||'—'}`;if(lim.min!==undefined)c+=` | Range: ${fmtV(lim.min)} a ${fmtV(lim.max)}`;c+=`\n    Média: ${a.media?.toFixed(3)||'—'}${lim.min!==undefined&&foraRange(a.media,lim.min,lim.max)?'  *** FORA DO RANGE ***':''}\n`});c+='\n'}
+  if(ncAtrito.value.length){c+=`${"=".repeat(50)}\nATRITO REPROVADO (${ncAtrito.value.length})\n${"=".repeat(50)}\n`;ncAtrito.value.forEach((a,x)=>{const lim=a.limitesSnapshot||{};c+=`\n[${x+1}] ${fmtData(a)} ${fmtHora(a)}\n    Linha: ${a.linha||'—'} | Produto: ${a.produto||'—'} | Lote: ${(a.lote||'—').toUpperCase()}\n    Classe AD: ${a.classeAD||'—'}`;if(normLimiteAtrito(lim))c+=` | Limite: ${limiteAtritoTxt(lim)}`;c+=`\n    Média: ${a.media?.toFixed(3)||'—'}${foraLimiteAtrito(a.media,lim)?'  *** FORA DO LIMITE ***':''}\n`});c+='\n'}
   if(ncTurno.value.length){c+=`${"=".repeat(50)}\nRELATÓRIO DE TURNO — LOTES CRÍTICOS (${ncTurno.value.length})\n${"=".repeat(50)}\n`;ncTurno.value.forEach((r,x)=>{c+=`\n[${x+1}] ${r.data} | ${r.responsavel} | Equipe ${r.equipe}\n    Linha: ${r.linha||'—'} | Referência: ${r.referencia||'—'} | Lote: ${(r.lote||'—').toUpperCase()}\n    Situação: ${r.situacao==='vermelha'?'🔴 RESTRIÇÃO/RETIDO':'🟠 LIBERADO COM DOCUMENTO'}\n`;if(r.observacao)c+=`    Justificativa: ${r.observacao}\n`})}
   c+=`\n${"─".repeat(50)}\nQualityControl — Empeno Pro\nGerado em ${new Date().toLocaleString('pt-BR')}`
   window.location.href=`mailto:?subject=${assunto}&body=${encodeURIComponent(c)}`

@@ -67,6 +67,10 @@
           <span v-if="!isCollapsed" class="text-sm font-bold whitespace-nowrap">{{ themeStore.isDark ? 'Modo Claro' : 'Modo Escuro' }}</span>
         </transition>
       </button>
+      <!-- Versão da aplicação -->
+      <span class="text-[10px] font-bold text-gray-300 dark:text-slate-600 tracking-wider select-none" :title="'Build: ' + buildDate">
+        v{{ appVersion }}
+      </span>
     </div>
 
     <!-- Ações de inspeção -->
@@ -197,6 +201,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+
+// ── Versionamento (injetado pelo Vite no build) ───────────────────────────────
+const appVersion = typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'
+const buildDate  = typeof __BUILD_DATE__  !== 'undefined' ? __BUILD_DATE__  : '—'
 import { useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import { useThemeStore } from '../stores/theme'

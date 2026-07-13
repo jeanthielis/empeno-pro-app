@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { VitePWA } from 'vite-plugin-pwa'
+import pkg from './package.json'
 
 export default defineConfig({
+  // Constantes globais injetadas no build — versionamento da aplicação
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+    __BUILD_DATE__:  JSON.stringify(new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })),
+  },
   plugins: [
     vue(),
     VitePWA({
@@ -44,6 +50,8 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // Remove caches de versões anteriores ao ativar o novo service worker
+        cleanupOutdatedCaches: true,
         // Cache de recursos estáticos (JS, CSS, fontes, ícones)
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Estratégia network-first para o Firebase (sempre dados frescos)

@@ -130,7 +130,7 @@ const excelAtrito = (lista) => {
       'Data': fmtData(a.dataHora), 'Hora': fmtHora(a.dataHora),
       'Resultado': a.resultado ?? '', 'Classe AD': a.classeAD ?? '',
       'Inspetor': a.inspetor ?? '', 'Linha': a.linha ?? '',
-      'Produto': a.produto ?? '', 'Lote': a.lote ?? '',
+      'Produto': a.produto ?? '', 'Formato': a.formato ?? '', 'Lote': a.lote ?? '',
       'Média': fmtV(a.media, 3),
       'Limite': limiteAtritoTxtExport(lim),
     }
@@ -456,7 +456,7 @@ const pdfDimensional = (doc, lista, startY) => {
 // ── PDF Atrito ─────────────────────────────────────────────────────────────────
 const pdfAtrito = (doc, lista, startY) => {
   // Atrito: uma linha por inspeção (a média + valores resumidos) — sem repetição
-  const head = [['Data', 'Hora', 'Resultado', 'Classe AD', 'Inspetor', 'Linha', 'Produto', 'Lote', 'Limite', 'Média', 'Nº Med.', 'Valores (nº:val, *=fora)']]
+  const head = [['Data', 'Hora', 'Resultado', 'Classe AD', 'Inspetor', 'Linha', 'Produto', 'Formato', 'Lote', 'Limite', 'Média', 'Nº Med.', 'Valores (nº:val, *=fora)']]
   const body = []
   const cores = []
 
@@ -469,21 +469,21 @@ const pdfAtrito = (doc, lista, startY) => {
     const ri = body.length
     body.push([
       fmtData(a.dataHora), fmtHora(a.dataHora), a.resultado??'',
-      a.classeAD??'', a.inspetor??'', a.linha??'', a.produto??'', a.lote??'',
+      a.classeAD??'', a.inspetor??'', a.linha??'', a.produto??'', a.formato??'', a.lote??'',
       limiteAtritoTxtExport(lim), fmtV(a.media,3), medidas.length, medidasStr
     ])
-    if (normLimiteAtritoExport(lim) && !aplicarSinalExport(a.media, lim)) cores.push({ri, ci:9})
-    if (medidas.some(m => !aplicarSinalExport(m, lim)))                   cores.push({ri, ci:11})
+    if (normLimiteAtritoExport(lim) && !aplicarSinalExport(a.media, lim)) cores.push({ri, ci:10})
+    if (medidas.some(m => !aplicarSinalExport(m, lim)))                   cores.push({ri, ci:12})
   })
 
   autoTable(doc, {
     ...baseTableStyles, startY, head, body,
     columnStyles: {
       2:{halign:'center'}, 3:{halign:'center'},
-      8:{halign:'center'},
-      9:{halign:'center', fontStyle:'bold'},
-      10:{halign:'center'},
-      11:{cellWidth:65}
+      9:{halign:'center'},
+      10:{halign:'center', fontStyle:'bold'},
+      11:{halign:'center'},
+      12:{cellWidth:65}
     },
     didParseCell(data) {
       if (data.section !== 'body') return

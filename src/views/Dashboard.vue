@@ -625,7 +625,7 @@
                   <td class="p-4 font-bold text-gray-700 dark:text-gray-300">{{ at.inspetor || 'N/A' }}</td>
                   <td class="p-4">
                     <div class="font-bold">{{ at.produto || 'N/A' }}</div>
-                    <div class="text-xs text-teal-600 font-bold mt-0.5">{{ at.linha || 'N/A' }}</div>
+                    <div class="text-xs text-teal-600 font-bold mt-0.5">{{ at.linha || 'N/A' }}<span v-if="at.formato" class="text-gray-400 font-bold"> · {{ at.formato }}</span></div>
                   </td>
                   <td class="p-4"><span class="font-mono bg-gray-100 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 px-2 py-1 rounded font-bold text-xs">{{ at.lote || 'N/A' }}</span></td>
                   <td class="p-4 text-center">
@@ -825,7 +825,7 @@
               </h2>
               <p class="text-sm text-gray-500 mt-1">
                 Lote: <strong class="text-gray-800 dark:text-gray-200">{{ atritoSelecionado.lote }}</strong>
-                · {{ atritoSelecionado.produto }}
+                · {{ atritoSelecionado.produto }}<template v-if="atritoSelecionado.formato"> · {{ atritoSelecionado.formato }}</template>
                 · <span class="text-teal-600 font-bold">{{ atritoSelecionado.linha }}</span>
                 <span v-if="atritoSelecionado.classeAD" class="ml-2 text-xs font-black px-2 py-0.5 rounded-full border" :class="corClasseAD(atritoSelecionado.classeAD)">{{ atritoSelecionado.classeAD }}</span>
               </p>

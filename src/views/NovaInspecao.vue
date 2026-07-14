@@ -69,6 +69,14 @@
             </div>
 
             <div>
+              <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Formato</label>
+              <select v-model="form.formato" class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] focus:ring-2 focus:ring-teal-500 outline-none">
+                <option value="">Selecione... (opcional)</option>
+                <option v-for="f in refStore.formatos" :key="f.id" :value="f.nome">{{ f.nome }}</option>
+              </select>
+            </div>
+
+            <div>
               <label class="block text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">Lote</label>
               <input type="text" v-model="form.lote" required
                 class="w-full bg-gray-50 dark:bg-slate-800 text-gray-900 dark:text-white border border-gray-200 dark:border-slate-700 rounded-lg p-3 text-[15px] focus:ring-2 focus:ring-teal-500 outline-none uppercase font-bold placeholder:font-normal placeholder:text-gray-400"
@@ -272,7 +280,7 @@ const extrairNome = (email = '') => {
 }
 
 const form = ref({
-  produto: '', linha: '', lote: '', classeAD: '', observacoes: '',
+  produto: '', formato: '', linha: '', lote: '', classeAD: '', observacoes: '',
   inspetor: extrairNome(auth.currentUser?.email),
   medidas: [null, null, null], // começa com 3, mas pode crescer
 })
@@ -433,6 +441,7 @@ const confirmarEnvio = async () => {
 
     await addDoc(collection(db, 'atrito'), {
       produto:     form.value.produto,
+      formato:     form.value.formato || null,
       lote:        form.value.lote,
       linha:       form.value.linha,
       inspetor:    form.value.inspetor,
@@ -477,6 +486,7 @@ const confirmarEnvio = async () => {
       txt += `*Equipe:* ${equipeAtual(agora)}\n`
       txt += `*Linha:* ${form.value.linha}\n`
       txt += `*Produto:* ${form.value.produto}\n`
+      if (form.value.formato) txt += `*Formato:* ${form.value.formato}\n`
       txt += `*Lote:* ${form.value.lote.toUpperCase()}\n`
       txt += `*Classe AD:* ${form.value.classeAD}\n`
 
